@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { getPendingCount } from '@/data/mockSubmissions'
 import styles from './DashboardSidebar.module.css'
 
 const userLinks = [
@@ -19,14 +20,14 @@ const businessLinks = [
 
 const adminLinks = [
   { to: '/admin/dashboard', label: 'Overview', icon: '📊' },
-  { to: '/admin/dashboard/businesses', label: 'Businesses', icon: '🏪' },
-  { to: '/admin/dashboard/reviews', label: 'Reviews', icon: '📝' },
-  { to: '/admin/dashboard/users', label: 'Users', icon: '👥' },
+  { to: '/admin/dashboard/owners', label: 'Business Owners', icon: '👤' },
+  { to: '/admin/dashboard/submissions', label: 'Submissions', icon: '📋', showBadge: true },
 ]
 
 export default function DashboardSidebar({ role = 'user' }) {
   const location = useLocation()
   const { signOut } = useAuth()
+  const pendingCount = role === 'admin' ? getPendingCount() : 0
 
   const links = role === 'admin' ? adminLinks : role === 'business' ? businessLinks : userLinks
 
@@ -42,6 +43,9 @@ export default function DashboardSidebar({ role = 'user' }) {
               >
                 <span className={styles.icon}>{link.icon}</span>
                 <span className={styles.label}>{link.label}</span>
+                {link.showBadge && pendingCount > 0 && (
+                  <span className={styles.badge}>{pendingCount}</span>
+                )}
               </Link>
             </li>
           ))}

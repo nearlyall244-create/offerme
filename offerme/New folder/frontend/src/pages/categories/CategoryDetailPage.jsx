@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { getCategoryBySlug, getSubcategoryBySlug } from '@/data/categories'
 import { getListingsByCategory } from '@/data/mockListings'
 import Navbar from '@/components/navbar/Navbar'
-import Footer from '@/components/footer/Footer'
+import Footer from '@/pages/footer/Footer'
 import styles from './CategoryDetailPage.module.css'
 
 function StarRating({ rating }) {

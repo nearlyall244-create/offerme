@@ -1,5 +1,5 @@
 import Navbar from '@/components/navbar/Navbar'
-import Footer from '@/components/footer/Footer'
+import Footer from '@/pages/footer/Footer'
 import CategoriesFullPage from '@/pages/categories/CategoriesFullPage'
 
 export default function CategoriesPage() {

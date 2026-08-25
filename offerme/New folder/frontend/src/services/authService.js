@@ -1,4 +1,30 @@
 
+// ── Seed default admin account (demo only, remove when connecting backend) ──
+const ADMIN_UID = 'demo_admin_001'
+const ADMIN_EMAIL = 'admin@offermee.com'
+const ADMIN_PASSWORD = 'admin123'
+
+function seedAdmin() {
+  const users = JSON.parse(localStorage.getItem('demo_users') || '[]')
+  const existing = users.find((u) => u.uid === ADMIN_UID)
+  if (!existing) {
+    users.push({
+      uid: ADMIN_UID,
+      id: ADMIN_UID,
+      email: ADMIN_EMAIL,
+      displayName: 'Admin',
+      password: ADMIN_PASSWORD,
+      role: 'admin',
+    })
+  } else {
+    existing.id = ADMIN_UID
+    existing.role = 'admin'
+    existing.email = ADMIN_EMAIL
+    existing.password = ADMIN_PASSWORD
+  }
+  localStorage.setItem('demo_users', JSON.stringify(users))
+}
+seedAdmin()
 
 const DemoAuth = {
   _user: null,

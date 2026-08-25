@@ -32,9 +32,12 @@ import BusinessAnalytics from '@/pages/dashboard/BusinessAnalytics'
 
 import AdminDashboardLayout from '@/pages/dashboard/AdminDashboardLayout'
 import AdminDashboardHome from '@/pages/dashboard/AdminDashboardHome'
-import AdminBusinesses from '@/pages/dashboard/AdminBusinesses'
-import AdminReviews from '@/pages/dashboard/AdminReviews'
-import AdminUsers from '@/pages/dashboard/AdminUsers'
+import BusinessOwnerDetails from '@/pages/dashboard/BusinessOwnerDetails'
+import BusinessSubmissionApproval from '@/pages/dashboard/BusinessSubmissionApproval'
+
+import PrivacyPolicy from '@/pages/footer/PrivacyPolicy'
+import TermsOfService from '@/pages/footer/TermsOfService'
+import Sitemap from '@/pages/footer/Sitemap'
 
 export default function App() {
   return (
@@ -89,10 +92,14 @@ export default function App() {
             element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboardLayout /></ProtectedRoute>}
           >
             <Route index element={<AdminDashboardHome />} />
-            <Route path="businesses" element={<AdminBusinesses />} />
-            <Route path="reviews" element={<AdminReviews />} />
-            <Route path="users" element={<AdminUsers />} />
+            <Route path="owners" element={<BusinessOwnerDetails />} />
+            <Route path="submissions" element={<BusinessSubmissionApproval />} />
           </Route>
+
+          {/* Legal / Footer Pages */}
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/sitemap" element={<Sitemap />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

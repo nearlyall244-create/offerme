@@ -58,7 +58,7 @@ export default function AdminLogin() {
               required
               value={form.password}
               onChange={handleChange}
-              placeholder="Admin password"
+              placeholder="admin123"
             />
           </div>
           <button type="submit" className={styles.submitBtn} disabled={loading}>
