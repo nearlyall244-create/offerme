@@ -1,0 +1,49 @@
+/* Component-specific styling for OfferMe Navbar & Mega Menus */
+
+@keyframes megaMenuSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes megaMenuFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.mega-menu-enter {
+  animation: megaMenuSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom scrollbar for multi-column menu lists */
+.mega-menu-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.mega-menu-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mega-menu-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.mega-menu-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mega menu glass backdrop */
+.mega-menu-backdrop {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}

@@ -1,0 +1,18 @@
+import { Link } from 'react-router-dom';
+
+const Unauthorized = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="text-center">
+      <h1 className="text-6xl font-bold text-red-600 mb-4">403</h1>
+      <p className="text-xl text-gray-600 mb-6">You don&apos;t have permission to access this page.</p>
+      <Link
+        to="/login"
+        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+      >
+        Go to Login
+      </Link>
+    </div>
+  </div>
+);
+
+export default Unauthorized;

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "21st": {
+      "type": "remote",
+      "url": "https://21st.dev/api/mcp",
+      "headers": { "x-api-key": "21st_sk_0b0306b8eb75d98848aa0bfb6d9cee8a88223cb1709db28aa787623b0dfa44a7" }
+    }
+  }
+}

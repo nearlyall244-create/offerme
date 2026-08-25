@@ -1,0 +1,145 @@
+.owner-dash-wrapper {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding: 2.5rem 1rem 4rem;
+}
+
+.owner-dash-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.owner-profile-banner {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .owner-profile-banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.owner-avatar-lg {
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 20px;
+  object-fit: cover;
+  border: 2px solid #fed7aa;
+}
+
+.owner-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .owner-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.owner-stat-card {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 1.35rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.owner-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(249, 115, 22, 0.1);
+  border-color: #fed7aa;
+}
+
+.owner-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.owner-tabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.owner-tab-btn {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.owner-tab-btn:hover {
+  color: #ea580c;
+}
+
+.owner-tab-btn.active {
+  color: #ea580c;
+  border-bottom-color: #ea580c;
+  font-weight: 700;
+}
+
+.status-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-pill.approved {
+  background-color: #ccfbf1;
+  color: #0f766e;
+}
+
+.status-pill.pending {
+  background-color: #ffedd5;
+  color: #ea580c;
+}
+
+.status-pill.rejected {
+  background-color: #ffe4e6;
+  color: #e11d48;
+}
+
+.owner-offers-table-card {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}

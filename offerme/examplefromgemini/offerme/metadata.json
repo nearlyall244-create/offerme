@@ -1,0 +1,6 @@
+{
+  "name": "offerme",
+  "description": "Local business discovery, deals, and business listing marketplace inspired by Skanvi with Google Maps, OTP verification, and owner/admin dashboards.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

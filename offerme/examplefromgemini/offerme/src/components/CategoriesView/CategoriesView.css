@@ -1,0 +1,54 @@
+.categories-view-wrapper {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding: 3rem 1.25rem 5rem;
+}
+
+.categories-view-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.category-hero-card {
+  position: relative;
+  height: 220px;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.category-hero-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.category-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.category-hero-card:hover .category-hero-img {
+  transform: scale(1.08);
+}
+
+.category-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.85) 100%);
+}
+
+.category-hero-content {
+  position: relative;
+  z-index: 2;
+}

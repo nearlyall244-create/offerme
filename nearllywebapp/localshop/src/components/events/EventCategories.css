@@ -1,0 +1,23 @@
+/* Component Specific CSS for EventCategories */
+
+.event-categories {
+  position: relative;
+  background: radial-gradient(circle at 50% 0%, rgba(241, 245, 249, 0.8) 0%, rgba(248, 250, 252, 1) 100%);
+}
+
+.event-categories__search-wrapper {
+  position: relative;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+.event-categories__search-input {
+  transition: all 0.2s ease-in-out;
+}
+
+.event-categories__search-input:focus {
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+.event-categories__badge-glow {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}

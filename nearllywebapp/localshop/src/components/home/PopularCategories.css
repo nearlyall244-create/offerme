@@ -1,0 +1,101 @@
+/* PopularCategories.css - Component-specific styling for the 2-row animated category marquee */
+
+.categories-marquee-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+  padding: 0.5rem 0;
+  /* Smooth edge fading mask on left and right borders */
+  mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 1) 6%,
+    rgba(0, 0, 0, 1) 94%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 1) 6%,
+    rgba(0, 0, 0, 1) 94%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.categories-track-row {
+  display: flex;
+  width: max-content;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  will-change: transform;
+}
+
+/* Row 1 moves LEFT continuously */
+.categories-track-left {
+  animation: marqueeScrollLeft 38s linear infinite;
+}
+
+/* Row 2 moves RIGHT continuously */
+.categories-track-right {
+  animation: marqueeScrollRight 42s linear infinite;
+}
+
+/* Pause marquee animation on hover over the category section container */
+.categories-marquee-container:hover .categories-track-row {
+  animation-play-state: paused;
+}
+
+/* Keyframes for seamless infinite 50% loop */
+@keyframes marqueeScrollLeft {
+  0% {
+    transform: translate3d(0%, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marqueeScrollRight {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0%, 0, 0);
+  }
+}
+
+/* Card sizing inside track */
+.category-marquee-item {
+  flex: 0 0 280px;
+  width: 280px;
+}
+
+@media (max-width: 640px) {
+  .category-marquee-item {
+    flex: 0 0 210px;
+    width: 210px;
+  }
+  .categories-track-left {
+    animation-duration: 26s;
+  }
+  .categories-track-right {
+    animation-duration: 28s;
+  }
+}
+
+/* Accessibility: Reduced motion preference support */
+@media (prefers-reduced-motion: reduce) {
+  .categories-track-left,
+  .categories-track-right {
+    animation: none !important;
+    transform: none !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  .categories-marquee-container {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}

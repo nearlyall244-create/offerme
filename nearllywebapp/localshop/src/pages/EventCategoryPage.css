@@ -1,0 +1,25 @@
+/* Page Specific CSS for EventCategoryPage */
+
+.event-category-page__header {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.event-category-page__vendor-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.event-category-page__vendor-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.08);
+}
+
+.event-category-page__filter-pill {
+  transition: all 0.2s ease;
+}
+
+.event-category-page__filter-pill.active {
+  background-color: #059669;
+  color: #ffffff;
+  border-color: #059669;
+}

@@ -1,0 +1,17 @@
+/* Page Specific CSS for EventsPage */
+
+.events-page__hero {
+  background: radial-gradient(circle at 100% 0%, rgba(16, 185, 129, 0.08) 0%, rgba(248, 250, 252, 1) 70%);
+}
+
+.events-page__stat-card {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.events-page__stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.04);
+}
