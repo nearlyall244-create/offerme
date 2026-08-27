@@ -75,6 +75,9 @@ export default function Navbar() {
 
         <div className={styles.actions}>
           <ThemeSwitch />
+          <Link to="/sell-your-business" className={styles.sellBtn}>
+            Sell Business
+          </Link>
           {user ? (
             <>
               {dashboardLink && (

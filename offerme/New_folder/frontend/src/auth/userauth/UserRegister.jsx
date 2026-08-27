@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import styles from '../Auth.module.css'
 
 export default function UserRegister() {
+  const { signUp } = useAuth()
+  const navigate = useNavigate()
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -20,6 +23,7 @@ export default function UserRegister() {
   const [locationError, setLocationError] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -84,7 +88,7 @@ export default function UserRegister() {
     return cleaned.length === 10
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccess('')
@@ -124,8 +128,17 @@ export default function UserRegister() {
       return
     }
 
-    // Frontend validation successful - No backend connected yet
-    setSuccess('Form validated successfully. Backend integration will be added later.')
+    // All validation passed — register the user
+    setIsSubmitting(true)
+
+    try {
+      const displayName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim()
+      await signUp(form.email.trim(), form.password, displayName, 'user')
+      // signUp succeeds → auth state updates → GuestRoute redirects to /dashboard
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please try again.')
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -303,8 +316,8 @@ export default function UserRegister() {
           </div>
 
           {/* Create Account Button */}
-          <button type="submit" className={styles.submitBtn}>
-            Create Account
+          <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+            {isSubmitting ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 

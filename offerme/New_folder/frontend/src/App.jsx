@@ -29,6 +29,8 @@ import BusinessProfile from '@/pages/dashboard/business/BusinessProfile'
 import BusinessPosts from '@/pages/dashboard/business/BusinessPosts'
 import BusinessAnalytics from '@/pages/dashboard/business/BusinessAnalytics'
 
+import SellYourbussiness from '@/pages/dashboard/sellyourbusiness/SellYourbussiness'
+
 import AdminDashboardHome from '@/pages/dashboard/admin/AdminDashboardHome'
 import BusinessOwnerDetails from '@/pages/dashboard/admin/BusinessOwnerDetails'
 import BusinessSubmissionApproval from '@/pages/dashboard/admin/BusinessSubmissionApproval'
@@ -60,6 +62,16 @@ export default function App() {
           <Route path="/auth/business/register" element={<GuestRoute><BusinessRegister /></GuestRoute>} />
           <Route path="/auth/business/login" element={<GuestRoute><BusinessLogin /></GuestRoute>} />
           <Route path="/auth/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
+
+          {/* Sell Your Business (accessible to both user and business roles) */}
+          <Route
+            path="/sell-your-business"
+            element={
+              <ProtectedRoute allowedRoles={['user', 'business']}>
+                <SellYourbussiness />
+              </ProtectedRoute>
+            }
+          />
 
           {/* User Dashboard */}
           <Route

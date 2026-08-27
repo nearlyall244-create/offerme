@@ -5,6 +5,7 @@ import styles from './DashboardSidebar.module.css'
 
 const userLinks = [
   { to: '/dashboard', label: 'Home', icon: '🏠' },
+  { to: '/sell-your-business', label: 'Sell Business', icon: '🏢' },
   { to: '/dashboard/profile', label: 'Profile', icon: '👤' },
   { to: '/dashboard/favorites', label: 'Favorites', icon: '❤️' },
   { to: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
@@ -12,6 +13,7 @@ const userLinks = [
 
 const businessLinks = [
   { to: '/business/dashboard', label: 'Home', icon: '🏠' },
+  { to: '/sell-your-business', label: 'Sell Business', icon: '🏢' },
   { to: '/business/dashboard/profile', label: 'Profile', icon: '👤' },
   { to: '/business/dashboard/posts', label: 'My Posts', icon: '📋' },
   { to: '/business/dashboard/analytics', label: 'Analytics', icon: '📊' },
