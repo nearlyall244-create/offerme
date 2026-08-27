@@ -1,11 +1,11 @@
 .page {
-  max-width: 900px;
+  max-width: 1000px;
 }
 
 .title {
   margin: 0 0 1.5rem;
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text);
 }
 
@@ -21,7 +21,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
 }
@@ -48,9 +48,9 @@
 }
 
 .metricChange {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--color-success);
+  color: #16a34a;
 }
 
 .sectionTitle {
@@ -61,10 +61,7 @@
 }
 
 .tableWrapper {
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .table {
@@ -74,54 +71,47 @@
 
 .table th,
 .table td {
-  padding: 0.75rem 1rem;
+  padding: 0.625rem 1rem;
   text-align: left;
   font-size: 0.8125rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .table th {
-  background: var(--color-surface-alt);
   font-weight: 600;
-  color: var(--color-text);
-  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface-alt);
 }
 
 .table td {
-  color: var(--color-text-muted);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.table tr:last-child td {
-  border-bottom: none;
+  color: var(--color-text);
 }
 
 .status {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.6875rem;
+  display: inline-block;
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: white;
-  border-radius: 0.25rem;
-  text-transform: capitalize;
+  border-radius: 999px;
 }
 
 .pending {
-  background: var(--color-warning);
+  color: #a16207;
+  background: #fef9c3;
 }
 
 .approved {
-  background: var(--color-success);
+  color: #15803d;
+  background: #dcfce7;
 }
 
 .rejected {
-  background: var(--color-danger);
+  color: #b91c1c;
+  background: #fee2e2;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .metricsGrid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .tableWrapper {
-    overflow-x: auto;
   }
 }

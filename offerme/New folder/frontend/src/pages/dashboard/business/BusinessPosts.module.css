@@ -1,5 +1,5 @@
 .page {
-  max-width: 800px;
+  max-width: 1000px;
 }
 
 .header {
@@ -12,14 +12,14 @@
 .title {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-text);
 }
 
 .addBtn {
-  padding: 0.625rem 1.25rem;
+  padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   color: white;
   background: var(--color-primary);
   border: none;
@@ -33,10 +33,10 @@
 }
 
 .formCard {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
-  padding: 1.5rem;
+  padding: 1.25rem;
   margin-bottom: 1.5rem;
 }
 
@@ -50,11 +50,18 @@
 .postList {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
 }
 
 .postCard {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   padding: 1rem;
@@ -75,52 +82,42 @@
 }
 
 .status {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: white;
-  border-radius: 0.25rem;
-  text-transform: capitalize;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
 }
 
 .pending {
-  background: var(--color-warning);
+  color: #a16207;
+  background: #fef9c3;
 }
 
 .approved {
-  background: var(--color-success);
+  color: #15803d;
+  background: #dcfce7;
 }
 
 .rejected {
-  background: var(--color-danger);
+  color: #b91c1c;
+  background: #fee2e2;
 }
 
 .postCategory {
   margin: 0 0 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
   color: var(--color-primary);
 }
 
 .postDesc {
-  margin: 0 0 0.5rem;
-  font-size: 0.8125rem;
+  margin: 0 0 0.625rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
-  line-height: 1.5;
 }
 
 .postMeta {
   display: flex;
   gap: 1rem;
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.empty {
-  padding: 3rem;
-  text-align: center;
-  background: white;
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }

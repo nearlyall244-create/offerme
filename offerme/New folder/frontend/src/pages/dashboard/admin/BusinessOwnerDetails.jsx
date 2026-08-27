@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react'
 import { getAllOwners, getAllSubmissions, updateOwnerStatus } from '@/data/mockSubmissions'
+import { formatDate, formatDateTime } from '@/utils/date'
+import StatusBadge from '@/components/shared/StatusBadge'
 import styles from './BusinessOwnerDetails.module.css'
 
 export default function BusinessOwnerDetails() {
@@ -31,18 +33,6 @@ export default function BusinessOwnerDetails() {
 
   const getOwnerSubmissions = (ownerId) => {
     return submissions.filter((s) => s.ownerId === ownerId)
-  }
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—'
-    const d = new Date(dateStr)
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
-
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return 'Never'
-    const d = new Date(dateStr)
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   const handleStatusChange = (ownerId, newStatus) => {
@@ -98,11 +88,7 @@ export default function BusinessOwnerDetails() {
                   <td className={styles.ownerName}>{owner.firstName} {owner.lastName}</td>
                   <td>{owner.email}</td>
                   <td>{owner.phone}</td>
-                  <td>
-                    <span className={`${styles.status} ${styles[owner.accountStatus]}`}>
-                      {owner.accountStatus}
-                    </span>
-                  </td>
+                  <td><StatusBadge status={owner.accountStatus} /></td>
                   <td>{formatDate(owner.createdAt)}</td>
                   <td>
                     <button className={styles.viewBtn} onClick={() => setSelectedOwner(owner)}>
@@ -156,7 +142,7 @@ export default function BusinessOwnerDetails() {
                           <span className={styles.submissionName}>{sub.businessName}</span>
                           <span className={styles.submissionCategory}>{sub.category.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
                         </div>
-                        <span className={`${styles.submissionStatus} ${styles[sub.status]}`}>{sub.status}</span>
+                        <StatusBadge status={sub.status} />
                       </div>
                     ))}
                   </div>

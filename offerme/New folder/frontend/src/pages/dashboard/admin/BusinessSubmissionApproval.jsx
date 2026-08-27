@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
 import { getAllSubmissions, getUniqueCategories, getUniqueCities, updateSubmissionStatus } from '@/data/mockSubmissions'
+import { formatDate } from '@/utils/date'
 import SubmissionDetailPanel from './SubmissionDetailPanel'
 import RejectReasonModal from './RejectReasonModal'
+import StatusBadge from '@/components/shared/StatusBadge'
 import styles from './BusinessSubmissionApproval.module.css'
 
 const ITEMS_PER_PAGE = 20
@@ -61,11 +63,6 @@ export default function BusinessSubmissionApproval() {
   const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
   const startItem = filtered.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1
   const endItem = Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)
-
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr)
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
 
   const handleApprove = (id) => {
     updateSubmissionStatus(id, 'approved')
@@ -155,11 +152,7 @@ export default function BusinessSubmissionApproval() {
                   <td>{sub.category.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</td>
                   <td>{sub.city}</td>
                   <td>{formatDate(sub.submittedAt)}</td>
-                  <td>
-                    <span className={`${styles.status} ${styles[sub.status]}`}>
-                      {sub.status}
-                    </span>
-                  </td>
+                  <td><StatusBadge status={sub.status} /></td>
                   <td>
                     <div className={styles.actions}>
                       <button className={styles.viewBtn} onClick={() => setViewingSubmission(sub)}>

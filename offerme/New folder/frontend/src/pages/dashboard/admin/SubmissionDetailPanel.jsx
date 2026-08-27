@@ -1,21 +1,9 @@
+import { formatDate, formatTime } from '@/utils/date'
+import StatusBadge from '@/components/shared/StatusBadge'
 import styles from './SubmissionDetailPanel.module.css'
 
 export default function SubmissionDetailPanel({ submission, onClose, onApprove, onReject }) {
   if (!submission) return null
-
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr)
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
-
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '—'
-    const [h, m] = timeStr.split(':')
-    const hour = parseInt(h, 10)
-    const ampm = hour >= 12 ? 'PM' : 'AM'
-    const h12 = hour % 12 || 12
-    return `${h12}:${m} ${ampm}`
-  }
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -101,9 +89,7 @@ export default function SubmissionDetailPanel({ submission, onClose, onApprove, 
               </div>
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Current Status</span>
-                <span className={`${styles.fieldValue} ${styles.statusBadge} ${styles[submission.status]}`}>
-                  {submission.status}
-                </span>
+                <StatusBadge status={submission.status} />
               </div>
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Last Updated</span>

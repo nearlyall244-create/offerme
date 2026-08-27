@@ -2,6 +2,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import CategoryMegaMenu from '@/components/categories/CategoryMegaMenu'
+import ThemeSwitch from './ThemeSwitch'
+import logo from '@/assets/logo/logo.png'
 import styles from './Navbar.module.css'
 
 export default function Navbar() {
@@ -38,8 +40,7 @@ export default function Navbar() {
     <nav className={styles.navbar} role="navigation" aria-label="Main navigation">
       <div className={styles.container}>
         <Link to="/" className={styles.logo}>
-          <span className={styles.logoIcon}>O</span>
-          <span className={styles.logoText}>OfferMe</span>
+          <img src={logo} alt="OfferMe" className={styles.logoImg} />
         </Link>
 
         <ul className={`${styles.navLinks} ${mobileOpen ? styles.open : ''}`}>
@@ -73,6 +74,7 @@ export default function Navbar() {
         </ul>
 
         <div className={styles.actions}>
+          <ThemeSwitch />
           {user ? (
             <>
               {dashboardLink && (

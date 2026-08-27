@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getAllSubmissions, getSubmissionsByStatus } from '@/data/mockSubmissions'
+import { formatDate } from '@/utils/date'
+import StatusBadge from '@/components/shared/StatusBadge'
 import styles from './AdminDashboardHome.module.css'
 
 export default function AdminDashboardHome() {
@@ -11,11 +13,6 @@ export default function AdminDashboardHome() {
   const recentSubmissions = [...submissions]
     .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
     .slice(0, 5)
-
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr)
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
 
   return (
     <div className={styles.page}>
@@ -75,11 +72,7 @@ export default function AdminDashboardHome() {
                 <td>{sub.category.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</td>
                 <td>{sub.ownerName}</td>
                 <td>{formatDate(sub.submittedAt)}</td>
-                <td>
-                  <span className={`${styles.status} ${styles[sub.status]}`}>
-                    {sub.status}
-                  </span>
-                </td>
+                <td><StatusBadge status={sub.status} /></td>
               </tr>
             ))}
           </tbody>

@@ -14,26 +14,24 @@ import RoleSelector from '@/auth/RoleSelector'
 import UnifiedLogin from '@/auth/UnifiedLogin'
 import UserRegister from '@/auth/userauth/UserRegister'
 import UserLogin from '@/auth/userauth/UserLogin'
-import BusinessRegister from '@/auth/bussinessauth/BussinessRegister'
+import BusinessRegister from '@/auth/bussinessauth/BussinessRegister.jsx'
 import BusinessLogin from '@/auth/bussinessauth/BussinessLogin'
 import AdminLogin from '@/auth/adminauth/AdminLogin'
 
-import UserDashboardLayout from '@/pages/dashboard/UserDashboardLayout'
-import UserDashboardHome from '@/pages/dashboard/UserDashboardHome'
-import UserProfile from '@/pages/dashboard/UserProfile'
-import UserFavorites from '@/pages/dashboard/UserFavorites'
-import UserSettings from '@/pages/dashboard/UserSettings'
+import DashboardLayout from '@/components/dashboard/DashboardLayout'
+import UserDashboardHome from '@/pages/dashboard/user/UserDashboardHome'
+import UserProfile from '@/pages/dashboard/user/UserProfile'
+import UserFavorites from '@/pages/dashboard/user/UserFavorites'
+import UserSettings from '@/pages/dashboard/user/UserSettings'
 
-import BusinessDashboardLayout from '@/pages/dashboard/BusinessDashboardLayout'
-import BusinessDashboardHome from '@/pages/dashboard/BusinessDashboardHome'
-import BusinessProfile from '@/pages/dashboard/BusinessProfile'
-import BusinessPosts from '@/pages/dashboard/BusinessPosts'
-import BusinessAnalytics from '@/pages/dashboard/BusinessAnalytics'
+import BusinessDashboardHome from '@/pages/dashboard/business/BusinessDashboardHome'
+import BusinessProfile from '@/pages/dashboard/business/BusinessProfile'
+import BusinessPosts from '@/pages/dashboard/business/BusinessPosts'
+import BusinessAnalytics from '@/pages/dashboard/business/BusinessAnalytics'
 
-import AdminDashboardLayout from '@/pages/dashboard/AdminDashboardLayout'
-import AdminDashboardHome from '@/pages/dashboard/AdminDashboardHome'
-import BusinessOwnerDetails from '@/pages/dashboard/BusinessOwnerDetails'
-import BusinessSubmissionApproval from '@/pages/dashboard/BusinessSubmissionApproval'
+import AdminDashboardHome from '@/pages/dashboard/admin/AdminDashboardHome'
+import BusinessOwnerDetails from '@/pages/dashboard/admin/BusinessOwnerDetails'
+import BusinessSubmissionApproval from '@/pages/dashboard/admin/BusinessSubmissionApproval'
 
 import PrivacyPolicy from '@/pages/footer/PrivacyPolicy'
 import TermsOfService from '@/pages/footer/TermsOfService'
@@ -66,7 +64,7 @@ export default function App() {
           {/* User Dashboard */}
           <Route
             path="/dashboard"
-            element={<ProtectedRoute allowedRoles={['user']}><UserDashboardLayout /></ProtectedRoute>}
+            element={<ProtectedRoute allowedRoles={['user']}><DashboardLayout role="user" /></ProtectedRoute>}
           >
             <Route index element={<UserDashboardHome />} />
             <Route path="profile" element={<UserProfile />} />
@@ -77,7 +75,7 @@ export default function App() {
           {/* Business Dashboard */}
           <Route
             path="/business/dashboard"
-            element={<ProtectedRoute allowedRoles={['business']}><BusinessDashboardLayout /></ProtectedRoute>}
+            element={<ProtectedRoute allowedRoles={['business']}><DashboardLayout role="business" /></ProtectedRoute>}
           >
             <Route index element={<BusinessDashboardHome />} />
             <Route path="profile" element={<BusinessProfile />} />
@@ -89,7 +87,7 @@ export default function App() {
           {/* Admin Dashboard */}
           <Route
             path="/admin/dashboard"
-            element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboardLayout /></ProtectedRoute>}
+            element={<ProtectedRoute allowedRoles={['admin']}><DashboardLayout role="admin" /></ProtectedRoute>}
           >
             <Route index element={<AdminDashboardHome />} />
             <Route path="owners" element={<BusinessOwnerDetails />} />

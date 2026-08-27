@@ -25,27 +25,14 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   text-decoration: none;
   color: white;
 }
 
-.logoIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.5rem;
-  background: var(--color-primary);
-  color: white;
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.logoText {
-  font-size: 1.25rem;
-  font-weight: 700;
+.logoImg {
+  height: 2.5rem;
+  width: auto;
+  filter: brightness(0) invert(1);
 }
 
 .tagline {

@@ -1,4 +1,4 @@
-import styles from './DashboardHome.module.css'
+import styles from '@/pages/dashboard/DashboardHome.module.css'
 
 export default function BusinessDashboardHome() {
   const stats = [
