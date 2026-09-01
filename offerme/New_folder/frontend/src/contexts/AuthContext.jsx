@@ -1,8 +1,22 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { authService } from '@/services/authService'
-import { firestoreService } from '@/services/firestoreService'
 
 const AuthContext = createContext(null)
+
+async function fetchProfile(token) {
+  const res = await fetch('/api/auth?action=get-profile', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  if (!data.profile) return null
+
+  // Normalize role names: backend returns 'customer'/'vendor', frontend uses 'user'/'business'
+  const roleMap = { customer: 'user', vendor: 'business' }
+  const normalizedRole = roleMap[data.role] || data.role
+
+  return { ...data.profile, role: normalizedRole }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -13,11 +27,15 @@ export function AuthProvider({ children }) {
     const unsubscribe = authService.onAuthChange(async (firebaseUser) => {
       setUser(firebaseUser)
       if (firebaseUser) {
-        const profile = await firestoreService.getDocument(
-          firestoreService.COLLECTIONS.USERS,
-          firebaseUser.uid
-        )
-        setUserProfile(profile)
+        try {
+          const token = await authService.getToken()
+          if (token) {
+            const profile = await fetchProfile(token)
+            setUserProfile(profile)
+          }
+        } catch {
+          setUserProfile(null)
+        }
       } else {
         setUserProfile(null)
       }
@@ -26,17 +44,30 @@ export function AuthProvider({ children }) {
     return unsubscribe
   }, [])
 
-  const signUp = async (email, password, displayName, role = 'user') => {
+  const signUp = async (email, password, displayName, role = 'user', phone_number = '') => {
     const firebaseUser = await authService.signUp(email, password, displayName)
-    await firestoreService.createDocument(firestoreService.COLLECTIONS.USERS, {
-      uid: firebaseUser.uid,
-      email,
-      displayName,
-      role,
-      phone: '',
-      bio: '',
-      avatar: '',
-    })
+    const token = await authService.getToken()
+
+    const isVendor = role === 'business' || role === 'vendor'
+
+    if (isVendor) {
+      const res = await fetch('/api/auth?action=signup-vendor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shop_name: displayName || 'My Shop', phone_number }),
+      })
+      const data = await res.json()
+      setUserProfile(data.shop ? { ...data.shop, role: 'business' } : { firebase_uid: firebaseUser.uid, email, displayName, role: 'business' })
+    } else {
+      const res = await fetch('/api/auth?action=signup-customer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: displayName, phone_number }),
+      })
+      const data = await res.json()
+      setUserProfile(data.customer ? { ...data.customer, role: 'user' } : { firebase_uid: firebaseUser.uid, email, displayName, role: 'user' })
+    }
+
     return firebaseUser
   }
 
@@ -52,12 +83,15 @@ export function AuthProvider({ children }) {
 
   const updateProfile = async (data) => {
     if (!user) return
-    await firestoreService.updateDocument(
-      firestoreService.COLLECTIONS.USERS,
-      user.uid,
-      data
-    )
     setUserProfile((prev) => ({ ...prev, ...data }))
+  }
+
+  const refreshProfile = async () => {
+    const token = await authService.getToken()
+    if (token) {
+      const profile = await fetchProfile(token)
+      setUserProfile(profile)
+    }
   }
 
   const value = {
@@ -68,6 +102,7 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     updateProfile,
+    refreshProfile,
     isUser: userProfile?.role === 'user',
     isBusiness: userProfile?.role === 'business',
     isAdmin: userProfile?.role === 'admin',
