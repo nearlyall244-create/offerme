@@ -28,12 +28,14 @@ import BusinessDashboardHome from '@/pages/dashboard/business/BusinessDashboardH
 import BusinessProfile from '@/pages/dashboard/business/BusinessProfile'
 import BusinessPosts from '@/pages/dashboard/business/BusinessPosts'
 import BusinessAnalytics from '@/pages/dashboard/business/BusinessAnalytics'
+import BusinessSettings from '@/pages/dashboard/business/BusinessSettings'
 
 import SellYourbussiness from '@/pages/dashboard/sellyourbusiness/SellYourbussiness'
 
 import AdminDashboardHome from '@/pages/dashboard/admin/AdminDashboardHome'
 import BusinessOwnerDetails from '@/pages/dashboard/admin/BusinessOwnerDetails'
 import BusinessSubmissionApproval from '@/pages/dashboard/admin/BusinessSubmissionApproval'
+import AdminSettings from '@/pages/dashboard/admin/AdminSettings'
 
 import PrivacyPolicy from '@/pages/footer/PrivacyPolicy'
 import TermsOfService from '@/pages/footer/TermsOfService'
@@ -93,7 +95,7 @@ export default function App() {
             <Route path="profile" element={<BusinessProfile />} />
             <Route path="posts" element={<BusinessPosts />} />
             <Route path="analytics" element={<BusinessAnalytics />} />
-            <Route path="settings" element={<UserSettings />} />
+            <Route path="settings" element={<BusinessSettings />} />
           </Route>
 
           {/* Admin Dashboard */}
@@ -104,6 +106,7 @@ export default function App() {
             <Route index element={<AdminDashboardHome />} />
             <Route path="owners" element={<BusinessOwnerDetails />} />
             <Route path="submissions" element={<BusinessSubmissionApproval />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
           {/* Legal / Footer Pages */}

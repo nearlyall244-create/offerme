@@ -30,6 +30,7 @@ const adminLinks = [
   { to: '/admin/dashboard/owners', label: 'Business Owners', icon: '👤' },
   { to: '/admin/dashboard/submissions', label: 'Submissions', icon: '📋', showBadge: true },
   { to: '/admin/dashboard/offers', label: 'Offers Details', icon: '📊' },
+  { to: '/admin/dashboard/settings', label: 'Settings', icon: '⚙️' },
 ]
 
 export default function DashboardSidebar({ role = 'user' }) {
