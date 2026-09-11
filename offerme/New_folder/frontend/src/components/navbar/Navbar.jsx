@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import CategoryMegaMenu from '@/components/categories/CategoryMegaMenu'
+
 import ThemeSwitch from './ThemeSwitch'
 import logo from '@/assets/logo/logo.png'
 import styles from './Navbar.module.css'
@@ -9,13 +10,13 @@ import styles from './Navbar.module.css'
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [megaMenuOpen, setMegaMenuOpen] = useState(false)
-  const { user, userProfile, signOut } = useAuth()
+
+  const { user, userProfile } = useAuth()
   const location = useLocation()
 
   const navLinks = [
     { label: 'Home', to: '/' },
     { label: 'Categories', to: '/categories', hasMegaMenu: true },
-    { label: 'About', to: '/about' },
     { label: 'Contact', to: '/contact' },
   ]
 
@@ -75,9 +76,6 @@ export default function Navbar() {
 
         <div className={styles.actions}>
           <ThemeSwitch />
-          <Link to="/sell-your-business" className={styles.sellBtn}>
-            Sell Business
-          </Link>
           {user ? (
             <>
               {dashboardLink && (
@@ -85,9 +83,7 @@ export default function Navbar() {
                   Dashboard
                 </Link>
               )}
-              <button onClick={signOut} className={styles.logoutBtn}>
-                Logout
-              </button>
+
             </>
           ) : (
             <>
@@ -116,6 +112,8 @@ export default function Navbar() {
       {mobileOpen && (
         <div className={styles.mobileOverlay} onClick={() => setMobileOpen(false)} />
       )}
+
+
     </nav>
   )
 }
