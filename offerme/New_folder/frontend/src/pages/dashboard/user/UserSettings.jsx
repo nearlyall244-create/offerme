@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { User, Bell, Shield, Trash2, Save, Camera } from 'lucide-react'
 import ConfirmModal from '@/components/shared/ConfirmModal'
 import styles from './UserSettings.module.css'
 
 export default function UserSettings() {
-  const { userProfile, signOut } = useAuth()
+  const { userProfile, signOut, updateProfile, refreshProfile } = useAuth()
   const [activeTab, setActiveTab] = useState('profile')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -13,10 +13,21 @@ export default function UserSettings() {
   const [saving, setSaving] = useState(false)
 
   const [profileData, setProfileData] = useState({
-    displayName: userProfile?.displayName || '',
+    displayName: userProfile?.displayName || userProfile?.name || '',
     email: userProfile?.email || '',
-    phone: userProfile?.phone || '',
+    phone: userProfile?.phone || userProfile?.phone_number || '',
   })
+
+  // Sync profile data when userProfile updates
+  useEffect(() => {
+    if (userProfile) {
+      setProfileData({
+        displayName: userProfile?.displayName || userProfile?.name || '',
+        email: userProfile?.email || '',
+        phone: userProfile?.phone || userProfile?.phone_number || '',
+      })
+    }
+  }, [userProfile])
 
   const [notifications, setNotifications] = useState({
     emailAlerts: true,
@@ -31,9 +42,20 @@ export default function UserSettings() {
   })
 
   const handleProfileSave = async () => {
+    if (!profileData.displayName.trim()) return
     setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setSaving(false)
+    try {
+      await updateProfile({
+        name: profileData.displayName.trim(),
+        displayName: profileData.displayName.trim(),
+        phone: profileData.phone,
+      })
+      await refreshProfile()
+    } catch (err) {
+      console.error('Failed to update profile:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleNotificationSave = async () => {

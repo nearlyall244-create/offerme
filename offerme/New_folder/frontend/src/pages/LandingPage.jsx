@@ -1,6 +1,8 @@
 import Navbar from '@/components/navbar/Navbar'
 import HeroSection from '@/components/hero/HeroSection'
-import CategoriesSection from '@/components/categories/CategoriesSection'
+import CategoryGroupCards from '@/components/categories/CategoryGroupCards'
+import Landingcards from '@/pages/landingpage/Landingcards'
+import HowItWorks from '@/pages/landingpage/HowItWorks/HowItWorks'
 import Footer from '@/pages/footer/Footer'
 
 export default function LandingPage() {
@@ -9,7 +11,9 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <HeroSection />
-        <CategoriesSection />
+        <CategoryGroupCards />
+        <Landingcards />
+        <HowItWorks />
       </main>
       <Footer />
     </div>

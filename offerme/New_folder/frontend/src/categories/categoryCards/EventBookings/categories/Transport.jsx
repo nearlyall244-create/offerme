@@ -1,5 +1,0 @@
-import CategoryDetailPage from '@/pages/categories/CategoryDetailPage'
-
-export default function Transport() {
-  return <CategoryDetailPage />
-}

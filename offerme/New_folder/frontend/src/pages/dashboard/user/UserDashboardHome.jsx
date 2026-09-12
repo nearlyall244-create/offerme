@@ -179,6 +179,9 @@ export default function UserDashboardHome() {
                 setShowSuggestions(e.target.value.length >= 2)
               }}
               onFocus={() => search.length >= 2 && setShowSuggestions(true)}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && search.trim()) {
                   saveRecentSearch(search.trim())

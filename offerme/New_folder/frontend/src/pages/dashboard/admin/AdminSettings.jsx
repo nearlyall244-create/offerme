@@ -1,53 +1,97 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Settings, Users, Shield, Bell, Save, LogOut } from 'lucide-react'
+import { User, LogOut, Mail, Shield, Save, Edit2, X, CheckCircle2, AlertCircle } from 'lucide-react'
 import ConfirmModal from '@/components/shared/ConfirmModal'
 import styles from './AdminSettings.module.css'
 
 export default function AdminSettings() {
-  const { userProfile, signOut } = useAuth()
-  const [activeTab, setActiveTab] = useState('general')
+  const { userProfile, signOut, updateProfile, refreshProfile } = useAuth()
+  const [activeTab, setActiveTab] = useState('profile')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const [general, setGeneral] = useState({
-    siteName: 'OfferMe',
-    maintenanceMode: false,
-    registrationEnabled: true,
-  })
+  // Edit mode state for Admin Profile Name
+  const [isEditing, setIsEditing] = useState(false)
+  const [adminName, setAdminName] = useState(
+    userProfile?.name || userProfile?.displayName || userProfile?.owner_name || ''
+  )
+  const [statusMessage, setStatusMessage] = useState({ type: '', text: '' })
 
-  const [notifications, setNotifications] = useState({
-    newBusinessAlerts: true,
-    submissionAlerts: true,
-    systemAlerts: true,
-    weeklyReports: true,
-  })
-
-  const [security, setSecurity] = useState({
-    requireEmailVerification: true,
-    sessionTimeout: '60',
-    ipWhitelist: '',
-  })
+  // Keep adminName in sync when userProfile loads or updates
+  useEffect(() => {
+    if (userProfile) {
+      const currentName =
+        userProfile?.name ||
+        userProfile?.displayName ||
+        userProfile?.owner_name ||
+        ''
+      setAdminName(currentName)
+    }
+  }, [userProfile])
 
   const tabs = [
-    { id: 'general', label: 'General', icon: Settings },
-    { id: 'users', label: 'User Management', icon: Users },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'account', label: 'Account', icon: Shield },
   ]
 
-  const handleSave = async () => {
+  const handleProfileSave = async () => {
+    if (!adminName.trim()) {
+      setStatusMessage({ type: 'error', text: 'Please enter a valid name.' })
+      return
+    }
+
     setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setSaving(false)
+    setStatusMessage({ type: '', text: '' })
+
+    try {
+      if (updateProfile) {
+        await updateProfile({
+          name: adminName.trim(),
+          displayName: adminName.trim(),
+        })
+      }
+      if (refreshProfile) {
+        await refreshProfile()
+      }
+      setIsEditing(false)
+      setStatusMessage({ type: 'success', text: 'Profile name updated successfully!' })
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: err.message || 'Failed to update profile name.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    const originalName =
+      userProfile?.name ||
+      userProfile?.displayName ||
+      userProfile?.owner_name ||
+      ''
+    setAdminName(originalName)
+    setIsEditing(false)
+    setStatusMessage({ type: '', text: '' })
+  }
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      await signOut()
+      setTimeout(() => {
+        window.location.href = '/auth/login'
+      }, 500)
+    } catch (err) {
+      console.error('Logout error:', err)
+      window.location.href = '/auth/login'
+    }
   }
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Admin Settings</h1>
-        <p className={styles.subtitle}>Manage platform settings and configurations</p>
+        <p className={styles.subtitle}>Manage your profile and administrator account details</p>
       </div>
 
       <div className={styles.container}>
@@ -65,214 +109,139 @@ export default function AdminSettings() {
         </nav>
 
         <div className={styles.content}>
-          {activeTab === 'general' && (
+          {/* ── 1. Profile Tab ───────────────────────────────── */}
+          {activeTab === 'profile' && (
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>General Settings</h2>
-              
+              <h2 className={styles.sectionTitle}>Profile Details</h2>
+
               <div className={styles.formGroup}>
-                <label className={styles.label}>Site Name</label>
+                <label className={styles.label} htmlFor="adminName">
+                  Name
+                </label>
                 <input
+                  id="adminName"
                   type="text"
-                  className={styles.input}
-                  value={general.siteName}
-                  onChange={(e) => setGeneral({ ...general, siteName: e.target.value })}
+                  className={`${styles.input} ${!isEditing ? styles.disabledInput : ''}`}
+                  value={adminName}
+                  onChange={(e) => {
+                    setAdminName(e.target.value)
+                    if (statusMessage.text) setStatusMessage({ type: '', text: '' })
+                  }}
+                  placeholder="Enter your name"
+                  disabled={!isEditing}
                 />
               </div>
 
-              <div className={styles.toggleGroup}>
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Maintenance Mode</span>
-                    <span className={styles.toggleDesc}>Temporarily disable public access to the site</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={general.maintenanceMode}
-                      onChange={(e) => setGeneral({ ...general, maintenanceMode: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Allow New Registrations</span>
-                    <span className={styles.toggleDesc}>Enable or disable new user registrations</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={general.registrationEnabled}
-                      onChange={(e) => setGeneral({ ...general, registrationEnabled: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.actions}>
-                <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                  <Save size={16} />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'users' && (
-            <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>User Management</h2>
-              
-              <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                  <span className={styles.statValue}>1,234</span>
-                  <span className={styles.statLabel}>Total Users</span>
-                </div>
-                <div className={styles.statCard}>
-                  <span className={styles.statValue}>89</span>
-                  <span className={styles.statLabel}>Business Owners</span>
-                </div>
-                <div className={styles.statCard}>
-                  <span className={styles.statValue}>12</span>
-                  <span className={styles.statLabel}>Pending Approvals</span>
-                </div>
-              </div>
-
-              <div className={styles.actions}>
-                <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                  <Save size={16} />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'security' && (
-            <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Security Settings</h2>
-              
-              <div className={styles.toggleGroup}>
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Require Email Verification</span>
-                    <span className={styles.toggleDesc}>Users must verify email before accessing dashboard</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={security.requireEmailVerification}
-                      onChange={(e) => setSecurity({ ...security, requireEmailVerification: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Admin Session Timeout</label>
-                <select
-                  className={styles.select}
-                  value={security.sessionTimeout}
-                  onChange={(e) => setSecurity({ ...security, sessionTimeout: e.target.value })}
+              {statusMessage.text && (
+                <div
+                  className={`${styles.statusMessage} ${
+                    statusMessage.type === 'success' ? styles.successMessage : styles.errorMessage
+                  }`}
                 >
-                  <option value="30">30 minutes</option>
-                  <option value="60">1 hour</option>
-                  <option value="120">2 hours</option>
-                  <option value="480">8 hours</option>
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>IP Whitelist (comma separated)</label>
-                <input
-                  type="text"
-                  className={styles.input}
-                  value={security.ipWhitelist}
-                  onChange={(e) => setSecurity({ ...security, ipWhitelist: e.target.value })}
-                  placeholder="192.168.1.1, 10.0.0.1"
-                />
-              </div>
+                  {statusMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                  <span>{statusMessage.text}</span>
+                </div>
+              )}
 
               <div className={styles.actions}>
-                <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                  <Save size={16} />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
+                {!isEditing ? (
+                  <button
+                    type="button"
+                    className={styles.editBtn}
+                    onClick={() => {
+                      setIsEditing(true)
+                      setStatusMessage({ type: '', text: '' })
+                    }}
+                  >
+                    <Edit2 size={16} />
+                    Edit
+                  </button>
+                ) : (
+                  <div className={styles.editActions}>
+                    <button
+                      type="button"
+                      className={styles.saveBtn}
+                      onClick={handleProfileSave}
+                      disabled={saving || !adminName.trim()}
+                    >
+                      <Save size={16} />
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.cancelBtn}
+                      onClick={handleCancel}
+                      disabled={saving}
+                    >
+                      <X size={16} />
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {activeTab === 'notifications' && (
+          {/* ── 2. Account Tab ───────────────────────────────── */}
+          {activeTab === 'account' && (
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Notification Preferences</h2>
-              
-              <div className={styles.toggleGroup}>
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>New Business Alerts</span>
-                    <span className={styles.toggleDesc}>Get notified when new businesses register</span>
+              <h2 className={styles.sectionTitle}>Account Details</h2>
+
+              <div className={styles.accountCard}>
+                <div className={styles.accountHeader}>
+                  <div className={styles.avatar}>
+                    <Shield size={26} />
                   </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.newBusinessAlerts}
-                      onChange={(e) => setNotifications({ ...notifications, newBusinessAlerts: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
+                  <div>
+                    <h3 className={styles.accountName}>
+                      {userProfile?.name || userProfile?.displayName || 'Administrator'}
+                    </h3>
+                    <span className={styles.accountRole}>Administrator Account</span>
+                  </div>
                 </div>
 
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Submission Alerts</span>
-                    <span className={styles.toggleDesc}>Get notified about new submissions</span>
+                <div className={styles.accountDetailsList}>
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>
+                      <Mail size={16} />
+                      <span>Email Address</span>
+                    </div>
+                    <span className={styles.detailValue}>{userProfile?.email || 'admin@offerme.in'}</span>
                   </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.submissionAlerts}
-                      onChange={(e) => setNotifications({ ...notifications, submissionAlerts: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
 
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>System Alerts</span>
-                    <span className={styles.toggleDesc}>Critical system notifications</span>
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>
+                      <Shield size={16} />
+                      <span>Role & Permissions</span>
+                    </div>
+                    <span className={styles.detailValue}>Super Admin</span>
                   </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.systemAlerts}
-                      onChange={(e) => setNotifications({ ...notifications, systemAlerts: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
 
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Weekly Reports</span>
-                    <span className={styles.toggleDesc}>Receive weekly platform analytics</span>
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>
+                      <CheckCircle2 size={16} />
+                      <span>Account Status</span>
+                    </div>
+                    <span className={styles.statusBadge}>Active</span>
                   </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.weeklyReports}
-                      onChange={(e) => setNotifications({ ...notifications, weeklyReports: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
                 </div>
               </div>
 
-              <div className={styles.actions}>
-                <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                  <Save size={16} />
-                  {saving ? 'Saving...' : 'Save Preferences'}
+              {/* Account Actions / Logout Section */}
+              <div className={styles.dangerZone}>
+                <div className={styles.dangerHeader}>
+                  <h3 className={styles.dangerTitle}>Sign Out</h3>
+                  <p className={styles.dangerDesc}>
+                    Log out of your administrator session on this device.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={styles.logoutBtn}
+                  onClick={() => setShowLogoutModal(true)}
+                >
+                  <LogOut size={16} />
+                  Logout
                 </button>
               </div>
             </div>
@@ -280,24 +249,19 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      <div className={styles.dangerZone}>
-        <h3 className={styles.dangerTitle}>Account</h3>
-        <button className={styles.logoutBtn} onClick={() => setShowLogoutModal(true)}>
-          <LogOut size={16} />
-          Sign Out
-        </button>
-      </div>
-
       <ConfirmModal
         open={showLogoutModal}
         title="Confirm Logout"
-        message="Are you sure you want to log out?"
+        message="Are you sure you want to log out of your admin account?"
         confirmLabel="Logout"
         danger
         success={loggingOut}
         successMessage="You have been logged out successfully."
-        onConfirm={() => { setLoggingOut(true); setTimeout(() => { signOut(); window.location.href = '/' }, 2000) }}
-        onCancel={() => { setShowLogoutModal(false); setLoggingOut(false) }}
+        onConfirm={handleLogout}
+        onCancel={() => {
+          setShowLogoutModal(false)
+          setLoggingOut(false)
+        }}
       />
     </div>
   )

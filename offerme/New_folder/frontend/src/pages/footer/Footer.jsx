@@ -4,11 +4,11 @@ import logo from '@/assets/logo/logo.png'
 import styles from './Footer.module.css'
 
 const TOP_CATEGORIES = [
-  { label: 'Restaurant', to: '/category/restaurant', icon: '🍽️' },
-  {label: 'Salons', to: '/category/salons', icon: '💇' },
-  { label: 'Event Bookings', to: '/category/event-bookings', icon: '🎉' },
-  { label: 'Mobile', to: '/category/mobile', icon: '📱' },
-  { label: 'Daily Essentials', to: '/category/daily-essentials', icon: '🛒' },
+  { label: 'Food & Restaurants', to: '/category/food-restaurants', icon: '🍽️' },
+  { label: 'Beauty & Personal Care', to: '/category/beauty-personal-care', icon: '💇' },
+  { label: 'Events & Weddings', to: '/category/events-weddings-entertainment', icon: '🎉' },
+  { label: 'Electronics & Mobiles', to: '/category/electronics-mobiles-computers', icon: '📱' },
+  { label: 'Grocery & Daily Needs', to: '/category/grocery-daily-needs', icon: '🛒' },
 ]
 
 export default function Footer() {
@@ -85,7 +85,6 @@ export default function Footer() {
               <li><Link to="/categories">Categories</Link></li>
               <li><Link to="/about">About Us</Link></li>
               <li><Link to="/contact">Contact Us</Link></li>
-              <li><Link to="/auth/admin/login">Admin Login</Link></li>
             </ul>
           </div>
 

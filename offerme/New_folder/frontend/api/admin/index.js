@@ -10,7 +10,8 @@ export default async function handler(req, res) {
 
     const { decodedToken } = authResult
 
-    const isAdmin = decodedToken.email === 'nearlyall244@gmail.com'
+    const ADMIN_EMAILS = ['nearlyall244@gmail.com', 'delivery.adbricks@gmail.com']
+    const isAdmin = ADMIN_EMAILS.includes(decodedToken.email)
     if (!isAdmin) {
       return res.status(403).json({ error: 'Forbidden: admin role required' })
     }

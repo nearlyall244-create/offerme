@@ -36,7 +36,6 @@ export default function HeroSection() {
 
   const allListings = useMemo(() => getAllListings(), [])
 
-  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e) {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -52,52 +51,29 @@ export default function HeroSection() {
 
   const selectedLocationLabel = LOCATIONS.find((l) => l.value === location)?.label || 'All Locations'
 
-  // Autocomplete suggestions — filtered by location + search query
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase()
-
-    // If typing a location name, show matching areas
     const allAreas = ['t nagar', 'vadapalani', 'porur']
     const matchedAreas = allAreas.filter((area) => area.includes(q) && q.length >= 2)
-
     let results = []
-
-    // Add matching area suggestions
     matchedAreas.forEach((area) => {
       const locEntry = LOCATIONS.find((l) => l.label.toLowerCase() === area)
       if (locEntry) {
-        results.push({
-          type: 'area',
-          id: `area-${locEntry.value}`,
-          label: locEntry.label,
-          locationValue: locEntry.value,
-        })
+        results.push({ type: 'area', id: `area-${locEntry.value}`, label: locEntry.label, locationValue: locEntry.value })
       }
     })
-
-    // Add matching business suggestions (filtered by location)
     const filteredListings = allListings
       .filter((l) => matchesLocation(l, location))
-      .filter(
-        (l) =>
-          l.name.toLowerCase().includes(q) ||
-          l.description.toLowerCase().includes(q) ||
-          l.category.toLowerCase().includes(q) ||
-          l.address.toLowerCase().includes(q)
+      .filter((l) =>
+        l.name.toLowerCase().includes(q) ||
+        l.description.toLowerCase().includes(q) ||
+        l.category.toLowerCase().includes(q) ||
+        l.address.toLowerCase().includes(q)
       )
       .slice(0, 5 - results.length)
-
     filteredListings.forEach((l) => {
-      results.push({
-        type: 'business',
-        id: l.id,
-        name: l.name,
-        category: l.category,
-        rating: l.rating,
-        address: l.address,
-      })
+      results.push({ type: 'business', id: l.id, name: l.name, category: l.category, rating: l.rating, address: l.address })
     })
-
     return results.slice(0, 6)
   }, [query, location, allListings])
 
@@ -139,125 +115,107 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-
           <h1 className={styles.title}>
-            Find the Best<br />
+            Find the Best{' '}
             <span className={styles.highlight}>Offers Near You</span>
           </h1>
 
+          <div className={styles.searchRow}>
+            <div className={styles.searchWrapper} ref={searchRef}>
+              <form onSubmit={handleSearch} className={styles.searchBar}>
+                <div className={styles.locationDropdown} ref={locationRef}>
+                  <button
+                    type="button"
+                    className={styles.locationBtn}
+                    onClick={() => setShowLocationDropdown(!showLocationDropdown)}
+                  >
+                    <MapPin size={16} />
+                    <span className={styles.locationLabel}>{selectedLocationLabel}</span>
+                    <ChevronDown size={14} className={`${styles.locationChevron} ${showLocationDropdown ? styles.locationChevronOpen : ''}`} />
+                  </button>
 
-          {/* Search Bar with Location */}
-          <div className={styles.searchWrapper} ref={searchRef}>
-            <form onSubmit={handleSearch} className={styles.searchBar}>
-              {/* Location Dropdown */}
-              <div className={styles.locationDropdown} ref={locationRef}>
-                <button
-                  type="button"
-                  className={styles.locationBtn}
-                  onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-                >
-                  <MapPin size={16} />
-                  <span className={styles.locationLabel}>{selectedLocationLabel}</span>
-                  <ChevronDown size={14} className={`${styles.locationChevron} ${showLocationDropdown ? styles.locationChevronOpen : ''}`} />
-                </button>
+                  {showLocationDropdown && (
+                    <div className={styles.locationMenu}>
+                      {LOCATIONS.map((loc) => (
+                        <button
+                          key={loc.value}
+                          type="button"
+                          className={`${styles.locationOption} ${location === loc.value ? styles.locationOptionActive : ''}`}
+                          onClick={() => handleLocationSelect(loc.value)}
+                        >
+                          <MapPin size={14} />
+                          {loc.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                {showLocationDropdown && (
-                  <div className={styles.locationMenu}>
-                    {LOCATIONS.map((loc) => (
-                      <button
-                        key={loc.value}
-                        type="button"
-                        className={`${styles.locationOption} ${location === loc.value ? styles.locationOptionActive : ''}`}
-                        onClick={() => handleLocationSelect(loc.value)}
-                      >
-                        <MapPin size={14} />
-                        {loc.label}
-                      </button>
-                    ))}
-                  </div>
+                <div className={styles.searchDivider} />
+
+                <Search className={styles.searchIcon} size={20} />
+                <input
+                  type="text"
+                  className={styles.searchInput}
+                  placeholder="Search restaurants, shops, offers..."
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value)
+                    setShowSuggestions(e.target.value.length >= 2)
+                  }}
+                  onFocus={() => query.length >= 2 && setShowSuggestions(true)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                  name="offerme_hero_search"
+                />
+                {query && (
+                  <button type="button" className={styles.clearBtn} onClick={clearSearch} aria-label="Clear search">
+                    <X size={16} />
+                  </button>
                 )}
-              </div>
-
-              <div className={styles.searchDivider} />
-
-              {/* Search Input */}
-              <Search className={styles.searchIcon} size={20} />
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="Search restaurants, shops, offers..."
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value)
-                  setShowSuggestions(e.target.value.length >= 2)
-                }}
-                onFocus={() => query.length >= 2 && setShowSuggestions(true)}
-              />
-              {query && (
-                <button type="button" className={styles.clearBtn} onClick={clearSearch} aria-label="Clear search">
-                  <X size={16} />
+                <button type="submit" className={styles.searchBtn}>
+                  Search
                 </button>
-              )}
-              <button type="submit" className={styles.searchBtn}>
-                Search
-              </button>
-            </form>
+              </form>
 
-            {/* Autocomplete Dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className={styles.suggestions}>
-                {suggestions.map((item) => {
-                  if (item.type === 'area') {
+              {showSuggestions && suggestions.length > 0 && (
+                <div className={styles.suggestions}>
+                  {suggestions.map((item) => {
+                    if (item.type === 'area') {
+                      return (
+                        <button key={item.id} className={styles.suggestionItem} onClick={() => handleSuggestionClick(item)}>
+                          <div className={styles.suggestionInfo}>
+                            <span className={styles.suggestionName}>
+                              <MapPin size={14} className={styles.suggestionPin} />
+                              {item.label}
+                            </span>
+                            <span className={styles.suggestionType}>Location</span>
+                          </div>
+                        </button>
+                      )
+                    }
                     return (
-                      <button
-                        key={item.id}
-                        className={styles.suggestionItem}
-                        onClick={() => handleSuggestionClick(item)}
-                      >
+                      <button key={item.id} className={styles.suggestionItem} onClick={() => handleSuggestionClick(item)}>
                         <div className={styles.suggestionInfo}>
-                          <span className={styles.suggestionName}>
-                            <MapPin size={14} className={styles.suggestionPin} />
-                            {item.label}
+                          <span className={styles.suggestionName}>{item.name}</span>
+                          <span className={styles.suggestionMeta}>
+                            <Star size={12} />
+                            {item.rating} · {item.category.replace(/-/g, ' ')}
                           </span>
-                          <span className={styles.suggestionType}>Location</span>
                         </div>
                       </button>
                     )
-                  }
-                  return (
-                    <button
-                      key={item.id}
-                      className={styles.suggestionItem}
-                      onClick={() => handleSuggestionClick(item)}
-                    >
-                      <div className={styles.suggestionInfo}>
-                        <span className={styles.suggestionName}>{item.name}</span>
-                        <span className={styles.suggestionMeta}>
-                          <Star size={12} />
-                          {item.rating} · {item.category.replace(/-/g, ' ')}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+                  })}
+                </div>
+              )}
+            </div>
 
-          <div className={styles.actions}>
             <Link to="/auth/signup" className={styles.ctaPrimary}>
               Get Started
             </Link>
-
           </div>
-
-        </motion.div>
-        <motion.div
-          className={styles.imageWrapper}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-        >
         </motion.div>
       </div>
     </section>

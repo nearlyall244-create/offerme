@@ -2,22 +2,72 @@ export default async function handler(req, res) {
   try {
     const { supabaseAdmin } = await import('../_lib/supabaseAdmin.js')
 
-    // ── GET → public offers list ──
+    // ── GET → public offers list or authenticated vendor's offers ──
     if (req.method === 'GET') {
-      const { category, shop_id, search, page = 1, limit = 20 } = req.query
+      const { category, shop_id, search, page = 1, limit = 20, mine } = req.query
       const offset = (page - 1) * limit
 
+      if (mine === 'true') {
+        const { verifyToken } = await import('../_lib/verifyToken.js')
+        const authResult = await verifyToken(req)
+        if (authResult.error) {
+          return res.status(authResult.status).json({ error: authResult.error })
+        }
+
+        const uid = authResult.decodedToken.uid
+
+        // Find business owner
+        const { data: owner } = await supabaseAdmin
+          .from('business_owners')
+          .select('id, owner_name')
+          .eq('firebase_uid', uid)
+          .maybeSingle()
+
+        // Find businesses
+        const { data: businesses } = await supabaseAdmin
+          .from('businesses')
+          .select('id, shop_name, shop_address, enquiry_number, shop_image_url')
+          .eq('owner_id', owner?.id || '00000000-0000-0000-0000-000000000000')
+
+        const bIds = (businesses || []).map((b) => b.id)
+        const businessMap = {}
+        for (const b of businesses || []) {
+          businessMap[b.id] = b
+        }
+
+        let query = supabaseAdmin
+          .from('offers_post')
+          .select('*', { count: 'exact' })
+
+        if (bIds.length > 0) {
+          query = query.or(`created_by_uid.eq.${uid},business_id.in.(${bIds.join(',')})`)
+        } else {
+          query = query.eq('created_by_uid', uid)
+        }
+
+        const { data: myOffers, count, error: err } = await query.order('created_at', { ascending: false })
+
+        if (err) {
+          return res.status(500).json({ error: err.message })
+        }
+
+        const formattedOffers = (myOffers || []).map((offer) => ({
+          ...offer,
+          businesses: businessMap[offer.business_id] || {
+            shop_name: owner?.owner_name || 'My Business',
+          },
+        }))
+
+        return res.status(200).json({ offers: formattedOffers, total: count || 0 })
+      }
+
       let query = supabaseAdmin
-        .from('offers')
-        .select('*, businesses(shop_name, categories(slug, name), shop_image_url)', { count: 'exact' })
+        .from('offers_post')
+        .select('*', { count: 'exact' })
         .eq('is_active', true)
 
       if (shop_id) {
         query = query.eq('business_id', shop_id)
-      }
-
-      if (category) {
-        query = query.eq('businesses.categories.slug', category)
       }
 
       if (search) {
@@ -33,8 +83,8 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({
-        offers: data,
-        total: count,
+        offers: data || [],
+        total: count || 0,
         page: Number(page),
         limit: Number(limit),
       })
@@ -54,19 +104,130 @@ export default async function handler(req, res) {
       const { decodedToken } = authResult
       const uid = decodedToken.uid
 
-      // POST ?action=claim → customer claims an offer
-      if (action === 'claim') {
-        if (!(await hasRole(uid, 'customer'))) {
-          return res.status(403).json({ error: 'Forbidden: customer role required' })
+      // POST ?action=create-deal / sell-business → publish deal into offers_post
+      if (action === 'create-deal' || action === 'create-offer' || action === 'sell-business' || !action) {
+        const body = req.body || {}
+        const {
+          dealHeadline,
+          title,
+          discountPercentage,
+          discount_percent,
+          couponCode,
+          coupon_code,
+          originalPrice,
+          offerPrice,
+          expiryDate,
+          valid_until,
+          description,
+          imageUrl,
+          image_url,
+          shopName,
+          shop_id,
+          shopAddress,
+          phoneNumber,
+        } = body
+
+        const dealTitle = (dealHeadline || title || shopName || 'Business Listing').trim()
+        if (!dealTitle) {
+          return res.status(400).json({ error: 'Title or Shop name is required' })
         }
 
+        // Find business owner
+        let { data: owner } = await supabaseAdmin
+          .from('business_owners')
+          .select('id, owner_name')
+          .eq('firebase_uid', uid)
+          .maybeSingle()
+
+        if (!owner) {
+          const { data: newOwner } = await supabaseAdmin
+            .from('business_owners')
+            .insert({
+              firebase_uid: uid,
+              owner_name: decodedToken.name || shopName || 'Business Owner',
+              email: decodedToken.email || null,
+            })
+            .select()
+            .single()
+          owner = newOwner
+        }
+
+        // Find or associate business
+        let businessId = shop_id
+        if (!businessId && owner) {
+          const { data: business } = await supabaseAdmin
+            .from('businesses')
+            .select('id')
+            .eq('owner_id', owner.id)
+            .maybeSingle()
+          if (business) businessId = business.id
+        }
+
+        if (!businessId && shopName && owner) {
+          const { data: newB } = await supabaseAdmin
+            .from('businesses')
+            .insert({
+              owner_id: owner.id,
+              shop_name: shopName,
+              shop_address: shopAddress || null,
+              enquiry_number: phoneNumber || null,
+              shop_image_url: imageUrl || image_url || null,
+            })
+            .select()
+            .single()
+          if (newB) businessId = newB.id
+        }
+
+        const discountNum = Number(discountPercentage ?? discount_percent) || null
+        const discValue = Number(offerPrice) || discountNum || null
+        const finalValidUntil = expiryDate || valid_until ? String(expiryDate || valid_until).split('T')[0] : null
+        const todayStr = new Date().toISOString().split('T')[0]
+
+        let fullDesc = description || ''
+        if (originalPrice && offerPrice) {
+          fullDesc = `Original Price: ₹${originalPrice} | Offer Price: ₹${offerPrice}${fullDesc ? ' — ' + fullDesc : ''}`
+        }
+
+        const { data: offerPost, error: insertErr } = await supabaseAdmin
+          .from('offers_post')
+          .insert({
+            title: dealTitle,
+            description: fullDesc || null,
+            discount_percent: discountNum,
+            discount_type: 'percentage',
+            discount_value: discValue,
+            coupon_code: (couponCode || coupon_code || '').trim() || null,
+            image_url: imageUrl || image_url || null,
+            valid_from: todayStr,
+            valid_until: finalValidUntil,
+            is_active: true,
+            business_id: businessId || null,
+            created_by_uid: uid,
+            created_by_role: 'business_owner',
+          })
+          .select()
+          .single()
+
+        if (insertErr) {
+          return res.status(500).json({ error: `Failed to create offer: ${insertErr.message}` })
+        }
+
+        return res.status(201).json({
+          success: true,
+          message: 'Offer published successfully',
+          offer: offerPost,
+        })
+      }
+
+      // POST ?action=claim → customer claims an offer
+      if (action === 'claim') {
         const { offer_id } = req.body
         if (!offer_id) {
           return res.status(400).json({ error: 'offer_id is required' })
         }
 
         const { data: offer, error: offerError } = await supabaseAdmin
-          .from('offers')
+          .from('offers_post')
           .select('id, is_active, valid_until')
           .eq('id', offer_id)
           .single()
@@ -79,246 +240,39 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Offer is no longer active' })
         }
 
-        if (offer.valid_until && new Date(offer.valid_until) < new Date()) {
-          return res.status(400).json({ error: 'Offer has expired' })
-        }
-
-        const { data: customer, error: custError } = await supabaseAdmin
-          .from('public_users')
-          .select('id')
-          .eq('firebase_uid', uid)
-          .single()
-
-        if (custError || !customer) {
-          return res.status(404).json({ error: 'Customer profile not found. Sign up as customer first.' })
-        }
-
-        const { data: existing } = await supabaseAdmin
-          .from('offer_redemptions')
-          .select('id')
-          .eq('offer_id', offer_id)
-          .eq('customer_id', customer.id)
-          .maybeSingle()
-
-        if (existing) {
-          return res.status(400).json({ error: 'You have already claimed this offer' })
-        }
-
-        const { data, error } = await supabaseAdmin
-          .from('offer_redemptions')
-          .insert({ offer_id, customer_id: customer.id })
-          .select()
-          .single()
-
-        if (error) {
-          return res.status(500).json({ error: error.message })
-        }
-
-        return res.status(201).json({ message: 'Offer claimed', redemption: data })
+        return res.status(200).json({ message: 'Claim successful', offer })
       }
-
-      // POST ?action=redeem → vendor marks a redemption as redeemed
-      if (action === 'redeem') {
-        if (!(await hasRole(uid, 'vendor'))) {
-          return res.status(403).json({ error: 'Forbidden: vendor role required' })
-        }
-
-        const { redemption_id } = req.body
-        if (!redemption_id) {
-          return res.status(400).json({ error: 'redemption_id is required' })
-        }
-
-        const { data: redemption, error: fetchError } = await supabaseAdmin
-          .from('offer_redemptions')
-          .select('id, offer_id, offers(business_id, businesses(business_owners(firebase_uid)))')
-          .eq('id', redemption_id)
-          .single()
-
-        if (fetchError || !redemption) {
-          return res.status(404).json({ error: 'Redemption not found' })
-        }
-
-        if (redemption.offers?.businesses?.business_owners?.firebase_uid !== uid) {
-          return res.status(403).json({ error: 'Forbidden: you do not own this business' })
-        }
-
-        if (redemption.redeemed_at) {
-          return res.status(400).json({ error: 'Redemption already redeemed' })
-        }
-
-        const { data, error } = await supabaseAdmin
-          .from('offer_redemptions')
-          .update({ redeemed_at: new Date().toISOString() })
-          .eq('id', redemption_id)
-          .select()
-          .single()
-
-        if (error) {
-          return res.status(500).json({ error: error.message })
-        }
-
-        return res.status(200).json({ message: 'Offer redeemed', redemption: data })
-      }
-
-      // POST (no action) → vendor creates an offer
-      if (!(await hasRole(uid, 'vendor'))) {
-        return res.status(403).json({ error: 'Forbidden: vendor role required' })
-      }
-
-      const { shop_id, title, description, discount_percent, coupon_code, image_url, valid_from, valid_until } = req.body
-
-      if (!shop_id || !title) {
-        return res.status(400).json({ error: 'shop_id and title are required' })
-      }
-
-      const { data: business, error: fetchError } = await supabaseAdmin
-        .from('businesses')
-        .select('id, owner_id, business_owners(firebase_uid)')
-        .eq('id', shop_id)
-        .single()
-
-      if (fetchError || !business) {
-        return res.status(404).json({ error: 'Business not found' })
-      }
-
-      if (business.business_owners?.firebase_uid !== uid) {
-        return res.status(403).json({ error: 'Forbidden: you do not own this business' })
-      }
-
-      const { data, error } = await supabaseAdmin
-        .from('offers')
-        .insert({
-          business_id: shop_id,
-          title,
-          description: description || null,
-          discount_percent: discount_percent || null,
-          coupon_code: coupon_code || null,
-          image_url: image_url || null,
-          valid_from: valid_from || null,
-          valid_until: valid_until || null,
-        })
-        .select()
-        .single()
-
-      if (error) {
-        return res.status(500).json({ error: error.message })
-      }
-
-      return res.status(201).json({ offer: data })
     }
 
-    // ── PUT → vendor updates an offer ──
-    if (req.method === 'PUT') {
-      const { verifyToken } = await import('../_lib/verifyToken.js')
-      const { hasRole } = await import('../_lib/resolveRole.js')
-
-      const authResult = await verifyToken(req)
-      if (authResult.error) {
-        return res.status(authResult.status).json({ error: authResult.error })
-      }
-
-      const { decodedToken } = authResult
-      const uid = decodedToken.uid
-
-      if (!(await hasRole(uid, 'vendor'))) {
-        return res.status(403).json({ error: 'Forbidden: vendor role required' })
-      }
-
-      const { offer_id, ...updateFields } = req.body
-      if (!offer_id) {
-        return res.status(400).json({ error: 'offer_id is required' })
-      }
-
-      const { data: offer, error: fetchError } = await supabaseAdmin
-        .from('offers')
-        .select('business_id, businesses(business_owners(firebase_uid))')
-        .eq('id', offer_id)
-        .single()
-
-      if (fetchError || !offer) {
-        return res.status(404).json({ error: 'Offer not found' })
-      }
-
-      if (offer.businesses?.business_owners?.firebase_uid !== uid) {
-        return res.status(403).json({ error: 'Forbidden: you do not own this offer' })
-      }
-
-      const allowed = ['title', 'description', 'discount_percent', 'discount_value', 'discount_type', 'coupon_code', 'image_url', 'valid_from', 'valid_until']
-      const filtered = {}
-      for (const key of allowed) {
-        if (updateFields[key] !== undefined) filtered[key] = updateFields[key]
-      }
-
-      if (Object.keys(filtered).length === 0) {
-        return res.status(400).json({ error: 'No valid fields to update' })
-      }
-
-      const { data, error } = await supabaseAdmin
-        .from('offers')
-        .update(filtered)
-        .eq('id', offer_id)
-        .select()
-        .single()
-
-      if (error) {
-        return res.status(500).json({ error: error.message })
-      }
-
-      return res.status(200).json({ offer: data })
-    }
-
-    // ── DELETE → vendor deactivates an offer ──
+    // ── DELETE → vendor removes an offer ──
     if (req.method === 'DELETE') {
       const { verifyToken } = await import('../_lib/verifyToken.js')
-      const { hasRole } = await import('../_lib/resolveRole.js')
-
       const authResult = await verifyToken(req)
-      if (authResult.error) {
-        return res.status(authResult.status).json({ error: authResult.error })
-      }
+      if (authResult.error) return res.status(authResult.status).json({ error: authResult.error })
 
-      const { decodedToken } = authResult
-      const uid = decodedToken.uid
+      const uid = authResult.decodedToken.uid
+      const body = req.body || {}
+      const offerId = req.query.offer_id || body.offer_id
+      if (!offerId) return res.status(400).json({ error: 'offer_id is required' })
 
-      if (!(await hasRole(uid, 'vendor'))) {
-        return res.status(403).json({ error: 'Forbidden: vendor role required' })
-      }
-
-      const { offer_id } = req.body
-      if (!offer_id) {
-        return res.status(400).json({ error: 'offer_id is required' })
-      }
-
-      const { data: offer, error: fetchError } = await supabaseAdmin
-        .from('offers')
-        .select('business_id, businesses(business_owners(firebase_uid))')
-        .eq('id', offer_id)
+      const { data: offer } = await supabaseAdmin
+        .from('offers_post')
+        .select('id, created_by_uid')
+        .eq('id', offerId)
         .single()
 
-      if (fetchError || !offer) {
-        return res.status(404).json({ error: 'Offer not found' })
-      }
-
-      if (offer.businesses?.business_owners?.firebase_uid !== uid) {
+      if (!offer) return res.status(404).json({ error: 'Offer not found' })
+      if (offer.created_by_uid !== uid) {
         return res.status(403).json({ error: 'Forbidden: you do not own this offer' })
       }
 
-      const { data, error } = await supabaseAdmin
-        .from('offers')
-        .update({ is_active: false })
-        .eq('id', offer_id)
-        .select()
-        .single()
-
-      if (error) {
-        return res.status(500).json({ error: error.message })
-      }
-
-      return res.status(200).json({ message: 'Offer deactivated', offer: data })
+      await supabaseAdmin.from('offers_post').delete().eq('id', offerId)
+      return res.status(200).json({ success: true, message: 'Offer deleted successfully' })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })
   } catch (err) {
+    console.error('[offers] outer error:', err)
     return res.status(500).json({ error: err.message })
   }
 }

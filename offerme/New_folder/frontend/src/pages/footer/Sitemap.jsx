@@ -20,7 +20,6 @@ const siteLinks = [
       { label: 'Login', to: '/auth/login' },
       { label: 'User Register', to: '/auth/user/register' },
       { label: 'Business Register', to: '/auth/business/register' },
-      { label: 'Admin Login', to: '/auth/admin/login' },
     ],
   },
   {
@@ -28,7 +27,6 @@ const siteLinks = [
     links: [
       { label: 'User Dashboard', to: '/dashboard' },
       { label: 'Business Dashboard', to: '/business/dashboard' },
-      { label: 'Admin Dashboard', to: '/admin/dashboard' },
     ],
   },
   {

@@ -20,6 +20,7 @@ const businessLinks = [
   { to: '/business/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/business/dashboard/profile', label: 'Profile', icon: '👤' },
   { to: '/business/dashboard/posts', label: 'My Posts', icon: '📋' },
+  { to: '/business/dashboard/offers', label: 'Offers / Deals', icon: '🏷️' },
   { to: '/business/dashboard/analytics', label: 'Analytics', icon: '📈' },
   { to: '/business/dashboard/settings', label: 'Settings', icon: '⚙️' },
 ]

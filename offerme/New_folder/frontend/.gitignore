@@ -30,3 +30,4 @@ dist-ssr
 api/_lib/serviceAccount.json
 
 supabase/.temp/
+.codegraph/

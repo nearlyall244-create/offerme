@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import CategoryMegaMenu from '@/components/categories/CategoryMegaMenu'
-
+import ConfirmModal from '@/components/shared/ConfirmModal'
 import ThemeSwitch from './ThemeSwitch'
 import logo from '@/assets/logo/logo.png'
 import styles from './Navbar.module.css'
@@ -10,8 +10,9 @@ import styles from './Navbar.module.css'
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [megaMenuOpen, setMegaMenuOpen] = useState(false)
-
-  const { user, userProfile } = useAuth()
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const { user, userProfile, signOut } = useAuth()
   const location = useLocation()
 
   const navLinks = [
@@ -83,7 +84,9 @@ export default function Navbar() {
                   Dashboard
                 </Link>
               )}
-
+              <button onClick={() => setShowLogoutModal(true)} className={styles.logoutBtn}>
+                Logout
+              </button>
             </>
           ) : (
             <>
@@ -113,7 +116,17 @@ export default function Navbar() {
         <div className={styles.mobileOverlay} onClick={() => setMobileOpen(false)} />
       )}
 
-
+      <ConfirmModal
+        open={showLogoutModal}
+        title="Confirm Logout"
+        message="Are you sure you want to log out?"
+        confirmLabel="Logout"
+        danger
+        success={loggingOut}
+        successMessage="You have been logged out successfully."
+        onConfirm={() => { setLoggingOut(true); setTimeout(() => { signOut(); window.location.href = '/' }, 2000) }}
+        onCancel={() => { setShowLogoutModal(false); setLoggingOut(false) }}
+      />
     </nav>
   )
 }

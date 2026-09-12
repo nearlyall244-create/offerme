@@ -1,60 +1,115 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Store, Bell, CreditCard, Globe, Save, Clock } from 'lucide-react'
+import { Store, User, LogOut, Mail, Phone, Shield, Save, Edit2, X, CheckCircle2, AlertCircle } from 'lucide-react'
 import ConfirmModal from '@/components/shared/ConfirmModal'
 import styles from './BusinessSettings.module.css'
 
 export default function BusinessSettings() {
-  const { userProfile, signOut } = useAuth()
+  const { userProfile, signOut, updateProfile, refreshProfile } = useAuth()
   const [activeTab, setActiveTab] = useState('business')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const [businessData, setBusinessData] = useState({
-    businessName: userProfile?.owner_name || userProfile?.businessName || '',
-    category: userProfile?.category || '',
-    description: userProfile?.description || '',
-    website: userProfile?.website || '',
-  })
+  // Edit mode state for Business Information
+  const [isEditing, setIsEditing] = useState(false)
+  const [businessName, setBusinessName] = useState(
+    userProfile?.owner_name || userProfile?.shop_name || userProfile?.businessName || userProfile?.displayName || ''
+  )
+  const [phoneNumber, setPhoneNumber] = useState(
+    userProfile?.phone || userProfile?.phoneNumber || userProfile?.businessPhoneNumber || ''
+  )
+  const [statusMessage, setStatusMessage] = useState({ type: '', text: '' })
 
-  const [notifications, setNotifications] = useState({
-    newClaims: true,
-    offerExpiry: true,
-    weeklyReports: true,
-    customerReviews: false,
-  })
-
-  const [operating, setOperating] = useState({
-    autoApprove: false,
-    holidayMode: false,
-    timezone: 'UTC',
-  })
+  // Keep businessName and phoneNumber in sync when userProfile loads or updates
+  useEffect(() => {
+    if (userProfile) {
+      const currentName =
+        userProfile?.owner_name ||
+        userProfile?.shop_name ||
+        userProfile?.businessName ||
+        userProfile?.displayName ||
+        ''
+      setBusinessName(currentName)
+      const currentPhone =
+        userProfile?.phone ||
+        userProfile?.phoneNumber ||
+        userProfile?.businessPhoneNumber ||
+        ''
+      setPhoneNumber(currentPhone)
+    }
+  }, [userProfile])
 
   const tabs = [
     { id: 'business', label: 'Business Info', icon: Store },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'operations', label: 'Operations', icon: Clock },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'account', label: 'Account', icon: User },
   ]
 
   const handleBusinessSave = async () => {
+    if (!businessName.trim()) {
+      setStatusMessage({ type: 'error', text: 'Please enter a valid business name.' })
+      return
+    }
+
     setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setSaving(false)
+    setStatusMessage({ type: '', text: '' })
+
+    try {
+      await updateProfile({
+        name: businessName.trim(),
+        owner_name: businessName.trim(),
+        shop_name: businessName.trim(),
+        businessName: businessName.trim(),
+        phone: phoneNumber.trim(),
+        phoneNumber: phoneNumber.trim(),
+        businessPhoneNumber: phoneNumber.trim(),
+      })
+      await refreshProfile()
+      setIsEditing(false)
+      setStatusMessage({ type: 'success', text: 'Business details updated successfully!' })
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: err.message || 'Failed to update business details.' })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleNotificationSave = async () => {
-    setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setSaving(false)
+  const handleCancel = () => {
+    const originalName =
+      userProfile?.owner_name ||
+      userProfile?.shop_name ||
+      userProfile?.businessName ||
+      userProfile?.displayName ||
+      ''
+    const originalPhone =
+      userProfile?.phone ||
+      userProfile?.phoneNumber ||
+      userProfile?.businessPhoneNumber ||
+      ''
+    setBusinessName(originalName)
+    setPhoneNumber(originalPhone)
+    setIsEditing(false)
+    setStatusMessage({ type: '', text: '' })
+  }
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      await signOut()
+      setTimeout(() => {
+        window.location.href = '/auth/login'
+      }, 500)
+    } catch (err) {
+      console.error('Logout error:', err)
+      window.location.href = '/auth/login'
+    }
   }
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Business Settings</h1>
-        <p className={styles.subtitle}>Manage your business preferences</p>
+        <p className={styles.subtitle}>Manage your business preferences and account details</p>
       </div>
 
       <div className={styles.container}>
@@ -75,223 +130,154 @@ export default function BusinessSettings() {
           {activeTab === 'business' && (
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>Business Information</h2>
-              
+
               <div className={styles.formGroup}>
-                <label className={styles.label}>Business Name</label>
+                <label className={styles.label} htmlFor="businessName">
+                  Business Name
+                </label>
                 <input
+                  id="businessName"
                   type="text"
-                  className={styles.input}
-                  value={businessData.businessName}
-                  onChange={(e) => setBusinessData({ ...businessData, businessName: e.target.value })}
+                  className={`${styles.input} ${!isEditing ? styles.disabledInput : ''}`}
+                  value={businessName}
+                  onChange={(e) => {
+                    setBusinessName(e.target.value)
+                    if (statusMessage.text) setStatusMessage({ type: '', text: '' })
+                  }}
+                  placeholder="Enter your business name"
+                  disabled={!isEditing}
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Business Category</label>
-                <select
-                  className={styles.select}
-                  value={businessData.category}
-                  onChange={(e) => setBusinessData({ ...businessData, category: e.target.value })}
-                >
-                  <option value="">Select category</option>
-                  <option value="restaurant">Restaurant</option>
-                  <option value="retail">Retail</option>
-                  <option value="services">Services</option>
-                  <option value="entertainment">Entertainment</option>
-                  <option value="health">Health & Beauty</option>
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Business Description</label>
-                <textarea
-                  className={styles.textarea}
-                  value={businessData.description}
-                  onChange={(e) => setBusinessData({ ...businessData, description: e.target.value })}
-                  rows={4}
-                  placeholder="Describe your business..."
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Website URL</label>
+                <label className={styles.label} htmlFor="phoneNumber">
+                  Phone Number
+                </label>
                 <input
-                  type="url"
-                  className={styles.input}
-                  value={businessData.website}
-                  onChange={(e) => setBusinessData({ ...businessData, website: e.target.value })}
-                  placeholder="https://example.com"
+                  id="phoneNumber"
+                  type="tel"
+                  className={`${styles.input} ${!isEditing ? styles.disabledInput : ''}`}
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value)
+                    if (statusMessage.text) setStatusMessage({ type: '', text: '' })
+                  }}
+                  placeholder="Enter phone number (e.g. +91 98765 43210)"
+                  disabled={!isEditing}
                 />
               </div>
 
-              <div className={styles.actions}>
-                <button className={styles.saveBtn} onClick={handleBusinessSave} disabled={saving}>
-                  <Save size={16} />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Notification Preferences</h2>
-              
-              <div className={styles.toggleGroup}>
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>New Claims</span>
-                    <span className={styles.toggleDesc}>Get notified when customers claim your offers</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.newClaims}
-                      onChange={(e) => setNotifications({ ...notifications, newClaims: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Offer Expiry Alerts</span>
-                    <span className={styles.toggleDesc}>Remind when offers are about to expire</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.offerExpiry}
-                      onChange={(e) => setNotifications({ ...notifications, offerExpiry: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Weekly Reports</span>
-                    <span className={styles.toggleDesc}>Receive weekly performance summaries</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.weeklyReports}
-                      onChange={(e) => setNotifications({ ...notifications, weeklyReports: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Customer Reviews</span>
-                    <span className={styles.toggleDesc}>Get notified about new reviews</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={notifications.customerReviews}
-                      onChange={(e) => setNotifications({ ...notifications, customerReviews: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.actions}>
-                <button className={styles.saveBtn} onClick={handleNotificationSave} disabled={saving}>
-                  <Save size={16} />
-                  {saving ? 'Saving...' : 'Save Preferences'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'operations' && (
-            <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Operational Settings</h2>
-              
-              <div className={styles.toggleGroup}>
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Auto-Approve Claims</span>
-                    <span className={styles.toggleDesc}>Automatically approve claims without manual review</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={operating.autoApprove}
-                      onChange={(e) => setOperating({ ...operating, autoApprove: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-
-                <div className={styles.toggleItem}>
-                  <div className={styles.toggleInfo}>
-                    <span className={styles.toggleLabel}>Holiday Mode</span>
-                    <span className={styles.toggleDesc}>Pause all active offers during holidays</span>
-                  </div>
-                  <label className={styles.toggle}>
-                    <input
-                      type="checkbox"
-                      checked={operating.holidayMode}
-                      onChange={(e) => setOperating({ ...operating, holidayMode: e.target.checked })}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Timezone</label>
-                <select
-                  className={styles.select}
-                  value={operating.timezone}
-                  onChange={(e) => setOperating({ ...operating, timezone: e.target.value })}
+              {statusMessage.text && (
+                <div
+                  className={`${styles.statusMessage} ${
+                    statusMessage.type === 'success' ? styles.successMessage : styles.errorMessage
+                  }`}
                 >
-                  <option value="UTC">UTC</option>
-                  <option value="EST">Eastern Time (EST)</option>
-                  <option value="CST">Central Time (CST)</option>
-                  <option value="MST">Mountain Time (MST)</option>
-                  <option value="PST">Pacific Time (PST)</option>
-                </select>
-              </div>
+                  {statusMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                  <span>{statusMessage.text}</span>
+                </div>
+              )}
 
               <div className={styles.actions}>
-                <button className={styles.saveBtn} onClick={handleNotificationSave} disabled={saving}>
-                  <Save size={16} />
-                  {saving ? 'Saving...' : 'Save Settings'}
-                </button>
+                {!isEditing ? (
+                  <button
+                    type="button"
+                    className={styles.editBtn}
+                    onClick={() => {
+                      setIsEditing(true)
+                      setStatusMessage({ type: '', text: '' })
+                    }}
+                  >
+                    <Edit2 size={16} />
+                    Edit
+                  </button>
+                ) : (
+                  <div className={styles.editActions}>
+                    <button
+                      type="button"
+                      className={styles.saveBtn}
+                      onClick={handleBusinessSave}
+                      disabled={saving || !businessName.trim()}
+                    >
+                      <Save size={16} />
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.cancelBtn}
+                      onClick={handleCancel}
+                      disabled={saving}
+                    >
+                      <X size={16} />
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {activeTab === 'billing' && (
+          {activeTab === 'account' && (
             <div className={styles.section}>
-              <h2 className={styles.sectionTitle}>Billing & Subscription</h2>
-              
-              <div className={styles.planCard}>
-                <div className={styles.planHeader}>
-                  <span className={styles.planName}>Free Plan</span>
-                  <span className={styles.planPrice}>$0/month</span>
+              <h2 className={styles.sectionTitle}>Account Details</h2>
+
+              <div className={styles.accountCard}>
+                <div className={styles.accountHeader}>
+                  <div className={styles.avatar}>
+                    <User size={26} />
+                  </div>
+                  <div>
+                    <h3 className={styles.accountName}>
+                      {userProfile?.name || userProfile?.owner_name || userProfile?.displayName || 'Business Owner'}
+                    </h3>
+                    <span className={styles.accountRole}>Business Account</span>
+                  </div>
                 </div>
-                <ul className={styles.planFeatures}>
-                  <li>Up to 5 active offers</li>
-                  <li>Basic analytics</li>
-                  <li>Email support</li>
-                </ul>
-                <button className={styles.upgradeBtn}>
-                  <Globe size={16} />
-                  Upgrade Plan
-                </button>
+
+                <div className={styles.accountDetailsList}>
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>
+                      <Mail size={16} />
+                      <span>Email Address</span>
+                    </div>
+                    <span className={styles.detailValue}>{userProfile?.email || 'N/A'}</span>
+                  </div>
+
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>
+                      <Phone size={16} />
+                      <span>Phone Number</span>
+                    </div>
+                    <span className={styles.detailValue}>
+                      {userProfile?.phone || userProfile?.phoneNumber || userProfile?.businessPhoneNumber || 'Not provided'}
+                    </span>
+                  </div>
+
+                  <div className={styles.detailRow}>
+                    <div className={styles.detailLabel}>
+                      <Shield size={16} />
+                      <span>Account Status</span>
+                    </div>
+                    <span className={styles.statusBadge}>Active</span>
+                  </div>
+                </div>
               </div>
 
+              {/* Account Actions / Logout Section */}
               <div className={styles.dangerZone}>
-                <h3 className={styles.dangerTitle}>Account Actions</h3>
-                <button className={styles.logoutBtn} onClick={() => setShowLogoutModal(true)}>
-                  Sign Out
+                <div className={styles.dangerHeader}>
+                  <h3 className={styles.dangerTitle}>Sign Out</h3>
+                  <p className={styles.dangerDesc}>
+                    Log out of your business owner session on this device.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={styles.logoutBtn}
+                  onClick={() => setShowLogoutModal(true)}
+                >
+                  <LogOut size={16} />
+                  Logout
                 </button>
               </div>
             </div>
@@ -302,13 +288,16 @@ export default function BusinessSettings() {
       <ConfirmModal
         open={showLogoutModal}
         title="Confirm Logout"
-        message="Are you sure you want to log out?"
+        message="Are you sure you want to log out of your business account?"
         confirmLabel="Logout"
         danger
         success={loggingOut}
         successMessage="You have been logged out successfully."
-        onConfirm={() => { setLoggingOut(true); setTimeout(() => { signOut(); window.location.href = '/auth/login' }, 2000) }}
-        onCancel={() => { setShowLogoutModal(false); setLoggingOut(false) }}
+        onConfirm={handleLogout}
+        onCancel={() => {
+          setShowLogoutModal(false)
+          setLoggingOut(false)
+        }}
       />
     </div>
   )

@@ -109,7 +109,8 @@ export default async function handler(req, res) {
 
       const { decodedToken } = authResult
       const { hasRole } = await import('../_lib/resolveRole.js')
-      const isAdmin = decodedToken.email === 'nearlyall244@gmail.com'
+      const ADMIN_EMAILS = ['nearlyall244@gmail.com', 'delivery.adbricks@gmail.com']
+      const isAdmin = ADMIN_EMAILS.includes(decodedToken.email)
       const isVendor = await hasRole(decodedToken.uid, 'vendor')
       if (!isAdmin && !isVendor) {
         return res.status(403).json({ error: 'Forbidden: vendor or admin role required' })
@@ -120,13 +121,23 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'shop_id is required' })
       }
 
-      const { data: business, error: fetchError } = await supabaseAdmin
+      let { data: business, error: fetchError } = await supabaseAdmin
         .from('businesses')
         .select('id, owner_id, business_owners(firebase_uid)')
         .eq('id', shop_id)
-        .single()
+        .maybeSingle()
 
-      if (fetchError || !business) {
+      if (!business) {
+        // Fallback: check if shop_id passed was owner_id
+        const { data: bByOwner } = await supabaseAdmin
+          .from('businesses')
+          .select('id, owner_id, business_owners(firebase_uid)')
+          .eq('owner_id', shop_id)
+          .maybeSingle()
+        business = bByOwner
+      }
+
+      if (!business) {
         return res.status(404).json({ error: 'Business not found' })
       }
 
@@ -147,12 +158,20 @@ export default async function handler(req, res) {
       const { data, error } = await supabaseAdmin
         .from('businesses')
         .update(filtered)
-        .eq('id', shop_id)
+        .eq('id', business.id)
         .select()
         .single()
 
       if (error) {
         return res.status(500).json({ error: error.message })
+      }
+
+      // If shop_name was updated, sync owner_name as well
+      if (filtered.shop_name && business.owner_id) {
+        await supabaseAdmin
+          .from('business_owners')
+          .update({ owner_name: filtered.shop_name, updated_at: new Date().toISOString() })
+          .eq('id', business.owner_id)
       }
 
       return res.status(200).json({ shop: data })

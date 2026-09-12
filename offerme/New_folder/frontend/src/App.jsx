@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute, GuestRoute } from '@/components/ProtectedRoute'
 
@@ -17,6 +17,7 @@ import UserLogin from '@/auth/userauth/UserLogin'
 import BusinessRegister from '@/auth/bussinessauth/BussinessRegister.jsx'
 import BusinessLogin from '@/auth/bussinessauth/BussinessLogin'
 import AdminLogin from '@/auth/adminauth/AdminLogin'
+import VerifyEmail from '@/auth/VerifyEmail'
 
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import UserDashboardHome from '@/pages/dashboard/user/UserDashboardHome'
@@ -27,6 +28,7 @@ import UserSettings from '@/pages/dashboard/user/UserSettings'
 import BusinessDashboardHome from '@/pages/dashboard/business/BusinessDashboardHome'
 import BusinessProfile from '@/pages/dashboard/business/BusinessProfile'
 import BusinessPosts from '@/pages/dashboard/business/BusinessPosts'
+import OffersDealsPage from '@/pages/dashboard/business/OffersDealsPage'
 import BusinessAnalytics from '@/pages/dashboard/business/BusinessAnalytics'
 import BusinessSettings from '@/pages/dashboard/business/BusinessSettings'
 
@@ -63,7 +65,8 @@ export default function App() {
           <Route path="/auth/user/login" element={<GuestRoute><UserLogin /></GuestRoute>} />
           <Route path="/auth/business/register" element={<GuestRoute><BusinessRegister /></GuestRoute>} />
           <Route path="/auth/business/login" element={<GuestRoute><BusinessLogin /></GuestRoute>} />
-          <Route path="/auth/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
+          <Route path="/auth/admin/login" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/auth/verify-email" element={<VerifyEmail />} />
 
           {/* Sell Your Business (accessible to both user and business roles) */}
           <Route
@@ -94,6 +97,7 @@ export default function App() {
             <Route index element={<BusinessDashboardHome />} />
             <Route path="profile" element={<BusinessProfile />} />
             <Route path="posts" element={<BusinessPosts />} />
+            <Route path="offers" element={<OffersDealsPage />} />
             <Route path="analytics" element={<BusinessAnalytics />} />
             <Route path="settings" element={<BusinessSettings />} />
           </Route>

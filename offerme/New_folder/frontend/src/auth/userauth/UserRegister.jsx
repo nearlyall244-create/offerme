@@ -7,75 +7,42 @@ export default function UserRegister() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
+    fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
     phoneNumber: '',
-    userlocation: '',
-    latitude: null,
-    longitude: null,
   })
 
-  const [locationStatus, setLocationStatus] = useState('')
-  const [locationLoading, setLocationLoading] = useState(false)
-  const [locationError, setLocationError] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
     setError('')
     setSuccess('')
-  }
 
-  const handleCurrentLocation = () => {
-    setLocationError('')
-    setLocationStatus('')
-
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by this browser. Please enter your location manually.')
-      return
+    // Password validation
+    if (name === 'password') {
+      if (value.length < 7) {
+        setError('Password must be at least 7 characters.')
+      } else if (!/[0-9]/.test(value)) {
+        setError('Password must contain at least one number.')
+      } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+        setError('Password must contain at least one symbol.')
+      }
     }
 
-    setLocationLoading(true)
-    setLocationStatus('Getting your current location...')
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords
-        setForm((prev) => ({
-          ...prev,
-          latitude: latitude,
-          longitude: longitude,
-          // Pre-fill or supplement location if empty
-          userlocation: prev.userlocation.trim() ? prev.userlocation : `Lat: ${latitude.toFixed(4)}, Long: ${longitude.toFixed(4)}`,
-        }))
-        setLocationLoading(false)
-        setLocationStatus('Location detected successfully.')
-        setError('')
-      },
-      (geoError) => {
-        setLocationLoading(false)
-        setLocationStatus('')
-
-        if (geoError.code === geoError.PERMISSION_DENIED) {
-          setLocationError('Location permission was denied. Please allow location access or enter your location manually.')
-        } else if (geoError.code === geoError.POSITION_UNAVAILABLE || geoError.code === geoError.TIMEOUT) {
-          setLocationError('Unable to detect your location. Please enter your location manually.')
-        } else {
-          setLocationError('Unable to get your current location. Please enter your location manually.')
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
+    // Confirm password validation
+    if (name === 'confirmPassword') {
+      if (value !== form.password) {
+        setError('Passwords do not match.')
       }
-    )
+    }
   }
 
   const validateEmail = (email) => {
@@ -83,7 +50,6 @@ export default function UserRegister() {
   }
 
   const validatePhone = (phone) => {
-    // 10-digit Indian phone validation (starts with 6-9 or 10 digits)
     const cleaned = phone.replace(/\D/g, '')
     return cleaned.length === 10
   }
@@ -93,8 +59,8 @@ export default function UserRegister() {
     setError('')
     setSuccess('')
 
-    if (!form.firstName.trim()) {
-      setError('Please enter your first name.')
+    if (!form.fullName.trim()) {
+      setError('Please enter your full name.')
       return
     }
 
@@ -108,8 +74,18 @@ export default function UserRegister() {
       return
     }
 
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters long.')
+    if (form.password.length < 7) {
+      setError('Password must be at least 7 characters long.')
+      return
+    }
+
+    if (!/[0-9]/.test(form.password)) {
+      setError('Password must contain at least one number.')
+      return
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.password)) {
+      setError('Password must contain at least one special symbol.')
       return
     }
 
@@ -123,18 +99,12 @@ export default function UserRegister() {
       return
     }
 
-    if (!form.userlocation.trim() && form.latitude === null) {
-      setError('Please enter your location or click "Use Current Location".')
-      return
-    }
-
-    // All validation passed — register the user
     setIsSubmitting(true)
 
     try {
-      const displayName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim()
+      const displayName = form.fullName.trim()
       await signUp(form.email.trim(), form.password, displayName, 'user')
-      // signUp succeeds → auth state updates → GuestRoute redirects to /dashboard
+      navigate('/auth/verify-email', { state: { email: form.email.trim() } })
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.')
       setIsSubmitting(false)
@@ -164,55 +134,57 @@ export default function UserRegister() {
         )}
 
         <form onSubmit={handleSubmit} className={styles.form} noValidate>
-          {/* First Name & Last Name (Optional) */}
-          <div className={styles.fieldRow}>
-            <div className={styles.field}>
-              <label htmlFor="firstName">
-                First Name <span className={styles.requiredStar}>*</span>
-              </label>
-              <input
-                id="firstName"
-                name="firstName"
-                type="text"
-                required
-                value={form.firstName}
-                onChange={handleChange}
-                placeholder="Enter first name"
-                autoComplete="given-name"
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label htmlFor="lastName">
-                Last Name <span className={styles.optionalTag}>[optional]</span>
-              </label>
-              <input
-                id="lastName"
-                name="lastName"
-                type="text"
-                value={form.lastName}
-                onChange={handleChange}
-                placeholder="Enter last name"
-                autoComplete="family-name"
-              />
-            </div>
-          </div>
-
-          {/* Email */}
+          {/* Full Name */}
           <div className={styles.field}>
-            <label htmlFor="email">
-              Email <span className={styles.requiredStar}>*</span>
+            <label htmlFor="fullName">
+              Full Name <span className={styles.requiredStar}>*</span>
             </label>
             <input
-              id="email"
-              name="email"
-              type="email"
+              id="fullName"
+              name="fullName"
+              type="text"
               required
-              value={form.email}
+              value={form.fullName}
               onChange={handleChange}
-              placeholder="Enter your email"
-              autoComplete="email"
+              placeholder="Full Name"
+              autoComplete="name"
             />
+          </div>
+
+          {/* Email & Phone */}
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label htmlFor="email">
+                Email <span className={styles.requiredStar}>*</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                autoComplete="email"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="phoneNumber">
+                Phone Number <span className={styles.requiredStar}>*</span>
+              </label>
+              <input
+                id="phoneNumber"
+                name="phoneNumber"
+                type="tel"
+                required
+                value={form.phoneNumber}
+                onChange={handleChange}
+                placeholder="Enter phone number"
+                maxLength={10}
+                autoComplete="tel"
+              />
+            </div>
           </div>
 
           {/* Password */}
@@ -220,16 +192,31 @@ export default function UserRegister() {
             <label htmlFor="password">
               Password <span className={styles.requiredStar}>*</span>
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Enter password"
-              autoComplete="new-password"
-            />
+            <div className={styles.passwordInputWrapper}>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Enter password"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className={styles.eyeToggle}
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Confirm Password */}
@@ -237,81 +224,30 @@ export default function UserRegister() {
             <label htmlFor="confirmPassword">
               Confirm Password <span className={styles.requiredStar}>*</span>
             </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              required
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Re-enter password"
-              autoComplete="new-password"
-            />
-          </div>
-
-          {/* Phone Number */}
-          <div className={styles.field}>
-            <label htmlFor="phoneNumber">
-              Phone Number <span className={styles.requiredStar}>*</span>
-            </label>
-            <input
-              id="phoneNumber"
-              name="phoneNumber"
-              type="tel"
-              required
-              value={form.phoneNumber}
-              onChange={handleChange}
-              placeholder="Enter phone number"
-              maxLength={10}
-              autoComplete="tel"
-            />
-          </div>
-
-          {/* User Location */}
-          <div className={styles.field}>
-            <label htmlFor="userlocation">
-              User Location <span className={styles.requiredStar}>*</span>
-            </label>
-            <input
-              id="userlocation"
-              name="userlocation"
-              type="text"
-              required
-              value={form.userlocation}
-              onChange={handleChange}
-              placeholder="Enter your location"
-            />
-
-            <div className={styles.locationControl}>
+            <div className={styles.passwordInputWrapper}>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                required
+                value={form.confirmPassword}
+                onChange={handleChange}
+                placeholder="Re-enter password"
+                autoComplete="new-password"
+              />
               <button
                 type="button"
-                className={styles.locationBtn}
-                onClick={handleCurrentLocation}
-                disabled={locationLoading}
+                className={styles.eyeToggle}
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                tabIndex={-1}
               >
-                📍 {locationLoading ? 'Detecting Location...' : 'Use Current Location'}
+                {showConfirmPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                )}
               </button>
-
-              {locationStatus && (
-                <div className={styles.locationStatusBox}>
-                  <div className={styles.locationStatusMsg}>
-                    <span>{locationLoading ? '⏳' : '✅'}</span>
-                    <span>{locationStatus}</span>
-                  </div>
-                  {form.latitude !== null && form.longitude !== null && (
-                    <div className={styles.locationCoordsBadge}>
-                      <span>Latitude: {form.latitude.toFixed(5)}</span>
-                      <span>Longitude: {form.longitude.toFixed(5)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {locationError && (
-                <div className={styles.locationErrorBox}>
-                  ⚠️ {locationError}
-                </div>
-              )}
             </div>
           </div>
 

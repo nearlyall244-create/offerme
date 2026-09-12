@@ -16,6 +16,13 @@ export default async function handler(req, res) {
       }
 
       const uid = authResult.decodedToken.uid
+      const email = authResult.decodedToken.email
+
+      const ADMIN_EMAILS = ['nearlyall244@gmail.com', 'delivery.adbricks@gmail.com']
+
+      if (email && ADMIN_EMAILS.includes(email)) {
+        return res.status(200).json({ role: 'admin', profile: { firebase_uid: uid, email, name: email.split('@')[0] } })
+      }
 
       const { data: customer } = await supabaseAdmin
         .from('public_users')
@@ -40,6 +47,83 @@ export default async function handler(req, res) {
       return res.status(200).json({ role: null, profile: null })
     } catch (err) {
       console.error('[auth] get-profile error:', err)
+      return res.status(500).json({ error: err.message || String(err) })
+    }
+  }
+
+  if (action === 'update-profile') {
+    if (req.method !== 'PUT' && req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' })
+    }
+    try {
+      const { verifyToken } = await import('../_lib/verifyToken.js')
+      const { supabaseAdmin } = await import('../_lib/supabaseAdmin.js')
+
+      const authResult = await verifyToken(req)
+      if (authResult.error) {
+        return res.status(authResult.status).json({ error: authResult.error })
+      }
+
+      const uid = authResult.decodedToken.uid
+      const body = req.body || {}
+      const name = body.name || body.owner_name || body.businessName || body.shop_name || body.displayName
+
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Name is required' })
+      }
+
+      const trimmedName = name.trim()
+
+      const { data: owner } = await supabaseAdmin
+        .from('business_owners')
+        .select('*')
+        .eq('firebase_uid', uid)
+        .maybeSingle()
+
+      if (owner) {
+        const { data: updatedOwner, error: updateErr } = await supabaseAdmin
+          .from('business_owners')
+          .update({ owner_name: trimmedName, updated_at: new Date().toISOString() })
+          .eq('id', owner.id)
+          .select()
+          .single()
+
+        if (updateErr) {
+          return res.status(500).json({ error: updateErr.message })
+        }
+
+        await supabaseAdmin
+          .from('businesses')
+          .update({ shop_name: trimmedName, updated_at: new Date().toISOString() })
+          .eq('owner_id', owner.id)
+
+        return res.status(200).json({ success: true, profile: updatedOwner })
+      }
+
+      const { data: customer } = await supabaseAdmin
+        .from('public_users')
+        .select('*')
+        .eq('firebase_uid', uid)
+        .maybeSingle()
+
+      if (customer) {
+        const { data: updatedCustomer, error: updateCustErr } = await supabaseAdmin
+          .from('public_users')
+          .update({ name: trimmedName, updated_at: new Date().toISOString() })
+          .eq('id', customer.id)
+          .select()
+          .single()
+
+        if (updateCustErr) {
+          return res.status(500).json({ error: updateCustErr.message })
+        }
+
+        return res.status(200).json({ success: true, profile: updatedCustomer })
+      }
+
+      return res.status(404).json({ error: 'User profile not found' })
+    } catch (err) {
+      console.error('[auth] update-profile error:', err)
       return res.status(500).json({ error: err.message || String(err) })
     }
   }

@@ -2,16 +2,19 @@ import { useAuth } from '@/contexts/AuthContext'
 import styles from '@/pages/dashboard/Profile.module.css'
 
 export default function UserProfile() {
-  const { userProfile, updateProfile } = useAuth()
+  const { userProfile, updateProfile, refreshProfile } = useAuth()
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
-    updateProfile({
-      displayName: formData.get('name'),
+    const name = formData.get('name')
+    await updateProfile({
+      displayName: name,
+      name: name,
       phone: formData.get('phone'),
       bio: formData.get('bio'),
     })
+    if (refreshProfile) await refreshProfile()
   }
 
   return (

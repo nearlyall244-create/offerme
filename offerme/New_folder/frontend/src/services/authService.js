@@ -1,107 +1,66 @@
+import { auth } from '@/config/firebase'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  sendEmailVerification,
+  onAuthStateChanged,
+  reload,
+} from 'firebase/auth'
 
-// ── Seed default admin account (demo only, remove when connecting backend) ──
-const ADMIN_UID = 'demo_admin_001'
-const ADMIN_EMAIL = 'admin@offermee.com'
-const ADMIN_PASSWORD = 'admin123'
-
-function seedAdmin() {
-  const users = JSON.parse(localStorage.getItem('demo_users') || '[]')
-  const existing = users.find((u) => u.uid === ADMIN_UID)
-  if (!existing) {
-    users.push({
-      uid: ADMIN_UID,
-      id: ADMIN_UID,
-      email: ADMIN_EMAIL,
-      displayName: 'Admin',
-      password: ADMIN_PASSWORD,
-      role: 'admin',
-    })
-  } else {
-    existing.id = ADMIN_UID
-    existing.role = 'admin'
-    existing.email = ADMIN_EMAIL
-    existing.password = ADMIN_PASSWORD
-  }
-  localStorage.setItem('demo_users', JSON.stringify(users))
-}
-seedAdmin()
-
-const DemoAuth = {
-  _user: null,
-  _listeners: [],
-
-  signUp(email, password, displayName) {
-    const users = JSON.parse(localStorage.getItem('demo_users') || '[]')
-    if (users.find((u) => u.email === email)) {
-      throw new Error('Email already in use')
-    }
-    const user = {
-      uid: 'demo_' + Date.now(),
-      email,
-      displayName,
-      role: 'user',
-    }
-    users.push({ ...user, password })
-    localStorage.setItem('demo_users', JSON.stringify(users))
-    this._user = user
-    localStorage.setItem('demo_session', JSON.stringify(user))
-    this._notify()
-    return Promise.resolve(user)
-  },
-
-  signIn(email, password) {
-    const users = JSON.parse(localStorage.getItem('demo_users') || '[]')
-    const found = users.find((u) => u.email === email && u.password === password)
-    if (!found) throw new Error('Invalid email or password')
-    const { password: _, ...user } = found
-    this._user = user
-    localStorage.setItem('demo_session', JSON.stringify(user))
-    this._notify()
-    return Promise.resolve(user)
-  },
-
-  signOut() {
-    this._user = null
-    localStorage.removeItem('demo_session')
-    this._notify()
-    return Promise.resolve()
-  },
-
-  onAuthChange(callback) {
-    const session = localStorage.getItem('demo_session')
-    if (session) {
-      this._user = JSON.parse(session)
-    }
-    setTimeout(() => callback(this._user), 0)
-    this._listeners.push(callback)
-    return () => {
-      this._listeners = this._listeners.filter((l) => l !== callback)
-    }
-  },
-
-  _notify() {
-    this._listeners.forEach((cb) => cb(this._user))
-  },
-}
+const googleProvider = new GoogleAuthProvider()
 
 export const authService = {
   async signUp(email, password, displayName) {
-    return DemoAuth.signUp(email, password, displayName)
+    const { user } = await createUserWithEmailAndPassword(auth, email, password)
+    if (displayName) {
+      const { updateProfile } = await import('firebase/auth')
+      await updateProfile(user, { displayName })
+    }
+    await sendEmailVerification(user)
+    return user
   },
 
   async signIn(email, password) {
-    return DemoAuth.signIn(email, password)
+    const { user } = await signInWithEmailAndPassword(auth, email, password)
+    return user
+  },
+
+  async signInWithGoogle() {
+    const { user } = await signInWithPopup(auth, googleProvider)
+    return user
   },
 
   async signOut() {
-    return DemoAuth.signOut()
+    await firebaseSignOut(auth)
+  },
+
+  async sendVerificationEmail() {
+    const user = auth.currentUser
+    if (!user) throw new Error('No user signed in')
+    await sendEmailVerification(user)
+  },
+
+  async reloadUser() {
+    const user = auth.currentUser
+    if (!user) throw new Error('No user signed in')
+    await reload(user)
+    return user
   },
 
   getCurrentUser() {
-    return DemoAuth._user
+    return auth.currentUser
+  },
+
+  async getToken() {
+    const user = auth.currentUser
+    if (!user) return null
+    return user.getIdToken()
   },
 
   onAuthChange(callback) {
-    return DemoAuth.onAuthChange(callback)
+    return onAuthStateChanged(auth, callback)
   },
 }

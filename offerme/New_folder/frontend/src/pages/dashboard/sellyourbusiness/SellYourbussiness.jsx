@@ -14,12 +14,6 @@ const INITIAL_FORM = {
   businessCategory: '',
   phoneNumber: '',
   shopAddress: '',
-  dealHeadline: '',
-  discountPercentage: '',
-  couponCode: '',
-  originalPrice: '',
-  offerPrice: '',
-  expiryDate: '',
   description: '',
 }
 
@@ -34,12 +28,6 @@ function validatePhone(phone) {
   return digits.length === 10 && /^[6-9]\d{9}$/.test(digits)
 }
 
-function getTomorrowDateStr() {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d.toISOString().split('T')[0]
-}
-
 function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
@@ -48,12 +36,17 @@ function formatFileSize(bytes) {
 
 /* ── Component ──────────────────────────────────────────────────── */
 
-export default function SellYourbussiness() {
-  const { userProfile, isBusiness } = useAuth()
+export default function SellYourbussiness({ onSuccess, onCancel, embedded = false }) {
+  const { userProfile, isBusiness, getToken } = useAuth()
   const navigate = useNavigate()
 
   /* ── Form state ─────────────────────────────────────────────── */
-  const [form, setForm] = useState(INITIAL_FORM)
+  const [form, setForm] = useState(() => ({
+    ...INITIAL_FORM,
+    shopName: userProfile?.owner_name || userProfile?.shop_name || '',
+    businessEmail: userProfile?.email || '',
+    phoneNumber: userProfile?.phone_number || '',
+  }))
   const [errors, setErrors] = useState({})
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
@@ -188,83 +181,17 @@ export default function SellYourbussiness() {
       errs.shopAddress = 'Please enter a complete address (at least 10 characters).'
     }
 
-    // Deal Headline
-    const headline = form.dealHeadline.trim()
-    if (!headline) {
-      errs.dealHeadline = 'Deal / offer headline is required.'
-    } else if (headline.length < 5) {
-      errs.dealHeadline = 'Headline must be at least 5 characters.'
-    }
-
-    // Discount Percentage
-    const discount = form.discountPercentage.trim()
-    const discountNum = discount === '' ? NaN : Number(discount)
-    if (!discount) {
-      errs.discountPercentage = 'Discount percentage is required.'
-    } else if (isNaN(discountNum) || discountNum < 0 || discountNum > 100) {
-      errs.discountPercentage = 'Discount must be between 0 and 100.'
-    }
-
-    // Coupon Code (optional)
-    if (form.couponCode.trim()) {
-      const code = form.couponCode.trim()
-      if (!/^[A-Za-z0-9_-]+$/.test(code)) {
-        errs.couponCode = 'Coupon code can only contain letters, numbers, hyphens, and underscores.'
-      }
-    }
-
-    // Original Price
-    const origPrice = form.originalPrice.trim()
-    const origPriceNum = origPrice === '' ? NaN : Number(origPrice)
-    if (!origPrice) {
-      errs.originalPrice = 'Original price is required.'
-    } else if (isNaN(origPriceNum) || origPriceNum <= 0) {
-      errs.originalPrice = 'Original price must be greater than 0.'
-    }
-
-    // Offer Price
-    const offerPrice = form.offerPrice.trim()
-    const offerPriceNum = offerPrice === '' ? NaN : Number(offerPrice)
-    if (!offerPrice) {
-      errs.offerPrice = 'Offer / deal price is required.'
-    } else if (isNaN(offerPriceNum) || offerPriceNum <= 0) {
-      errs.offerPrice = 'Offer price must be greater than 0.'
-    } else if (!isNaN(origPriceNum) && offerPriceNum > origPriceNum) {
-      errs.offerPrice = 'Offer price cannot be greater than original price.'
-    }
-
-    // Cross-check: discount vs price difference
-    if (
-      !isNaN(origPriceNum) &&
-      !isNaN(offerPriceNum) &&
-      origPriceNum > 0 &&
-      offerPriceNum > 0 &&
-      offerPriceNum <= origPriceNum &&
-      !isNaN(discountNum) &&
-      discountNum >= 0 &&
-      discountNum <= 100
-    ) {
-      const actualDiscount = ((origPriceNum - offerPriceNum) / origPriceNum) * 100
-      const enteredDiscount = discountNum
-      if (Math.abs(actualDiscount - enteredDiscount) > 5) {
-        errs.discountPercentage = `Entered ${enteredDiscount}% but prices reflect ~${actualDiscount.toFixed(0)}% discount. Please adjust.`
-      }
-    }
-
-    // Expiry Date
-    if (!form.expiryDate) {
-      errs.expiryDate = 'Deal expiry date is required.'
-    } else {
-      const expiryDate = new Date(form.expiryDate + 'T23:59:59')
-      const tomorrow = new Date(getTomorrowDateStr() + 'T00:00:00')
-      if (expiryDate < tomorrow) {
-        errs.expiryDate = 'Expiry date must be in the future.'
-      }
-    }
-
     // Image
-    if (!imageFile) {
-      errs.image = 'Please upload a shop & offer image.'
+    if (!imageFile && !imagePreview) {
+      errs.image = 'Shop / business image is required. Please upload an image.'
+    }
+
+    // Description
+    const desc = form.description.trim()
+    if (!desc) {
+      errs.description = 'Business description is required.'
+    } else if (desc.length < 10) {
+      errs.description = 'Description must be at least 10 characters.'
     }
 
     return errs
@@ -296,42 +223,39 @@ export default function SellYourbussiness() {
       return
     }
 
-    setIsSubmitting(true)
+    try {
+      const token = await getToken()
+      const payload = {
+        shopName: form.shopName.trim(),
+        businessEmail: form.businessEmail.trim(),
+        businessCategory: form.businessCategory,
+        phoneNumber: form.phoneNumber.trim(),
+        shopAddress: form.shopAddress.trim(),
+        description: form.description.trim(),
+        imageUrl: imagePreview || null,
+      }
 
-    // ── SIMULATION: No backend call ─────────────────────────────
-    // In production, replace this block with:
-    //
-    // const formData = new FormData()
-    // formData.append('shopName', form.shopName.trim())
-    // formData.append('businessEmail', form.businessEmail.trim())
-    // ... append all fields ...
-    // formData.append('image', imageFile)
-    //
-    // const response = await fetch('/api/businesses', {
-    //   method: 'POST',
-    //   headers: { Authorization: `Bearer ${token}` },
-    //   body: formData,
-    // })
-    // if (!response.ok) throw new Error('Submission failed')
+      const response = await fetch('/api/offers?action=sell-business', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
 
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Submission failed. Please try again.')
+      }
 
-    setIsSubmitting(false)
-    setSubmitted(true)
+      setSubmitted(true)
+    } catch (err) {
+      setErrors((prev) => ({ ...prev, submit: err.message || 'Submission failed. Please try again.' }))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-
-  /* ── Computed discount info ─────────────────────────────────── */
-
-  function getDiscountInfo() {
-    const orig = Number(form.originalPrice)
-    const offer = Number(form.offerPrice)
-    if (!orig || !offer || orig <= 0 || offer <= 0 || offer > orig) return null
-    const pct = ((orig - offer) / orig) * 100
-    const saved = orig - offer
-    return { pct: pct.toFixed(0), saved: saved.toFixed(0) }
-  }
-
-  const discountInfo = getDiscountInfo()
 
   /* ── Normal User: Promotion Panel ───────────────────────────── */
 
@@ -590,163 +514,10 @@ export default function SellYourbussiness() {
 
               <hr className={styles.sectionDivider} />
 
-              {/* ── Section: Offer / Deal Details ─────────────── */}
-              <h3 className={styles.sectionTitle}>Offer / Deal Details</h3>
-
-              <div className={styles.field}>
-                <label htmlFor="dealHeadline">
-                  Deal / Offer Headline <span className={styles.requiredStar}>*</span>
-                </label>
-                <input
-                  id="dealHeadline"
-                  name="dealHeadline"
-                  type="text"
-                  placeholder="e.g. Flat 30% Off on All Snacks This Weekend!"
-                  value={form.dealHeadline}
-                  onChange={handleChange}
-                  className={errors.dealHeadline ? styles.fieldError : ''}
-                  aria-invalid={!!errors.dealHeadline}
-                  aria-describedby={errors.dealHeadline ? 'err-dealHeadline' : undefined}
-                />
-                {errors.dealHeadline && (
-                  <span className={styles.fieldError} id="err-dealHeadline" role="alert">
-                    <span className={styles.errorIcon}>⚠</span> {errors.dealHeadline}
-                  </span>
-                )}
-              </div>
-
-              <div className={styles.fieldRow}>
-                <div className={styles.field}>
-                  <label htmlFor="discountPercentage">
-                    Discount Percentage (%) <span className={styles.requiredStar}>*</span>
-                  </label>
-                  <input
-                    id="discountPercentage"
-                    name="discountPercentage"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="1"
-                    placeholder="e.g. 30"
-                    value={form.discountPercentage}
-                    onChange={handleChange}
-                    className={errors.discountPercentage ? styles.fieldError : ''}
-                    aria-invalid={!!errors.discountPercentage}
-                    aria-describedby={errors.discountPercentage ? 'err-discountPercentage' : undefined}
-                  />
-                  {errors.discountPercentage && (
-                    <span className={styles.fieldError} id="err-discountPercentage" role="alert">
-                      <span className={styles.errorIcon}>⚠</span> {errors.discountPercentage}
-                    </span>
-                  )}
-                </div>
-
-                <div className={styles.field}>
-                  <label htmlFor="couponCode">
-                    Custom Coupon Code <span className={styles.optionalTag}>(optional)</span>
-                  </label>
-                  <input
-                    id="couponCode"
-                    name="couponCode"
-                    type="text"
-                    placeholder="e.g. SNACK30"
-                    value={form.couponCode}
-                    onChange={handleChange}
-                    className={errors.couponCode ? styles.fieldError : ''}
-                    aria-invalid={!!errors.couponCode}
-                    aria-describedby={errors.couponCode ? 'err-couponCode' : undefined}
-                  />
-                  {errors.couponCode && (
-                    <span className={styles.fieldError} id="err-couponCode" role="alert">
-                      <span className={styles.errorIcon}>⚠</span> {errors.couponCode}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.fieldRow}>
-                <div className={styles.field}>
-                  <label htmlFor="originalPrice">
-                    Original Price (₹) <span className={styles.requiredStar}>*</span>
-                  </label>
-                  <input
-                    id="originalPrice"
-                    name="originalPrice"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="e.g. 500"
-                    value={form.originalPrice}
-                    onChange={handleChange}
-                    className={errors.originalPrice ? styles.fieldError : ''}
-                    aria-invalid={!!errors.originalPrice}
-                    aria-describedby={errors.originalPrice ? 'err-originalPrice' : undefined}
-                  />
-                  {errors.originalPrice && (
-                    <span className={styles.fieldError} id="err-originalPrice" role="alert">
-                      <span className={styles.errorIcon}>⚠</span> {errors.originalPrice}
-                    </span>
-                  )}
-                </div>
-
-                <div className={styles.field}>
-                  <label htmlFor="offerPrice">
-                    Offer / Deal Price (₹) <span className={styles.requiredStar}>*</span>
-                  </label>
-                  <input
-                    id="offerPrice"
-                    name="offerPrice"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="e.g. 350"
-                    value={form.offerPrice}
-                    onChange={handleChange}
-                    className={errors.offerPrice ? styles.fieldError : ''}
-                    aria-invalid={!!errors.offerPrice}
-                    aria-describedby={errors.offerPrice ? 'err-offerPrice' : undefined}
-                  />
-                  {errors.offerPrice && (
-                    <span className={styles.fieldError} id="err-offerPrice" role="alert">
-                      <span className={styles.errorIcon}>⚠</span> {errors.offerPrice}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {discountInfo && (
-                <div className={styles.discountInfo}>
-                  <span className={styles.discountInfoIcon}>💰</span>
-                  Your customers save ₹{discountInfo.saved} ({discountInfo.pct}% off) with this deal!
-                </div>
-              )}
-
-              <div className={styles.field}>
-                <label htmlFor="expiryDate">
-                  Deal Expiry Date <span className={styles.requiredStar}>*</span>
-                </label>
-                <input
-                  id="expiryDate"
-                  name="expiryDate"
-                  type="date"
-                  min={getTomorrowDateStr()}
-                  value={form.expiryDate}
-                  onChange={handleChange}
-                  className={errors.expiryDate ? styles.fieldError : ''}
-                  aria-invalid={!!errors.expiryDate}
-                  aria-describedby={errors.expiryDate ? 'err-expiryDate' : undefined}
-                />
-                {errors.expiryDate && (
-                  <span className={styles.fieldError} id="err-expiryDate" role="alert">
-                    <span className={styles.errorIcon}>⚠</span> {errors.expiryDate}
-                  </span>
-                )}
-              </div>
-
-              <hr className={styles.sectionDivider} />
-
               {/* ── Section: Image Upload ─────────────────────── */}
-              <h3 className={styles.sectionTitle}>Shop &amp; Offer Image</h3>
+              <h3 className={styles.sectionTitle}>
+                Shop / Business Image <span className={styles.requiredStar}>*</span>
+              </h3>
 
               {imagePreview ? (
                 <div className={styles.imagePreviewContainer}>
@@ -814,19 +585,24 @@ export default function SellYourbussiness() {
               {/* ── Section: Description ──────────────────────── */}
               <h3 className={styles.sectionTitle}>Additional Details</h3>
 
-              <div className={styles.field}>
+              <div className={`${styles.field} ${errors.description ? styles.fieldError : ''}`}>
                 <label htmlFor="description">
-                  Description <span className={styles.optionalTag}>(optional)</span>
+                  Description <span className={styles.requiredStar}>*</span>
                 </label>
                 <textarea
                   id="description"
                   name="description"
-                  placeholder="Tell customers more about your business and this offer..."
+                  placeholder="Tell customers more about your business..."
                   rows={4}
                   maxLength={MAX_DESCRIPTION_LENGTH}
                   value={form.description}
                   onChange={handleChange}
                 />
+                {errors.description && (
+                  <span className={styles.fieldError} role="alert">
+                    <span className={styles.errorIcon}>⚠</span> {errors.description}
+                  </span>
+                )}
                 <span
                   className={`${styles.charCount} ${
                     form.description.length >= MAX_DESCRIPTION_LENGTH
@@ -840,21 +616,59 @@ export default function SellYourbussiness() {
                 </span>
               </div>
 
+              {/* ── Submit Error Banner ── */}
+              {errors.submit && (
+                <div
+                  style={{
+                    padding: '0.75rem 1rem',
+                    marginBottom: '1rem',
+                    borderRadius: '0.5rem',
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    color: '#b91c1c',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {errors.submit}
+                </div>
+              )}
+
               {/* ── Submit ────────────────────────────────────── */}
-              <button
-                type="submit"
-                className={styles.submitBtn}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className={styles.spinner} aria-hidden="true" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Submit Listing'
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className={styles.spinner} aria-hidden="true" />
+                      Publishing...
+                    </>
+                  ) : (
+                    'Submit Listing'
+                  )}
+                </button>
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    disabled={isSubmitting}
+                    style={{
+                      padding: '0.875rem 1.75rem',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      borderRadius: '0.625rem',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-surface-alt, #f1f5f9)',
+                      color: 'var(--color-text-muted, #64748b)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
                 )}
-              </button>
+              </div>
             </form>
           </div>
         </div>
@@ -869,23 +683,51 @@ export default function SellYourbussiness() {
           aria-label="Submission successful"
         >
           <div className={styles.successCard}>
-            <span className={styles.successEmoji} role="img" aria-label="celebration">
-              🎉
+            <span className={styles.successEmoji} role="img" aria-label="success">
+              ✅
             </span>
-            <h2 className={styles.successTitle}>Listing Submitted!</h2>
-            <p className={styles.successMessage}>
-              Your business listing has been received successfully.
-              Our team will review it and your listing will go live within 24 hours.
+            <p
+              className={styles.successMessage}
+              style={{
+                fontSize: '1.05rem',
+                color: 'var(--color-text)',
+                lineHeight: 1.6,
+                margin: '0 0 1rem',
+              }}
+            >
+              Once the activation is completed, you will be able to access your account and proceed with the next steps.
             </p>
-            <p className={styles.successNote}>
-              Backend / API integration will be connected soon. No data has been stored on a server yet.
+            <p
+              className={styles.successMessage}
+              style={{
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: 'var(--color-text)',
+                margin: '0 0 1.5rem',
+              }}
+            >
+              Thank you for your cooperation.
             </p>
             <button
               type="button"
               className={styles.successBtn}
-              onClick={() => navigate('/business/dashboard')}
+              style={{
+                minWidth: '130px',
+                justifyContent: 'center',
+                margin: '0 auto',
+                fontSize: '1rem',
+                padding: '0.75rem 2rem',
+              }}
+              onClick={() => {
+                setSubmitted(false)
+                if (onSuccess) {
+                  onSuccess()
+                } else {
+                  navigate('/business/dashboard/posts')
+                }
+              }}
             >
-              Back to Dashboard
+              Okay
             </button>
           </div>
         </div>
